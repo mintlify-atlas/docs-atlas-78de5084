@@ -1,0 +1,174 @@
+---
+title: 'Pizzerías Page Query'
+description: 'Query function to fetch locations page with interactive map and pizzeria listings'
+---
+
+## getPizzeriasPageQuery
+
+Retrieves all content for the pizzerias locations page including map background, provinces with coordinates, and local restaurant information.
+
+### Function Signature
+
+```typescript
+getPizzeriasPageQuery(lang: string = 'es'): string
+```
+
+### Parameters
+
+<ParamField path="lang" type="string" default="es">
+  Language code for localized content. Supports 'es', 'ca', 'en', etc. Falls back to Spanish if translation not available.
+</ParamField>
+
+### GROQ Query
+
+```groq
+*[_type == "pizzeriasPage" && _id == "pizzeriasPage"][0] {
+  "mapBackground": mapBackground.asset->url,
+  "mapBackgroundAlt": mapBackground.alt,
+  "highlightedText": coalesce(highlightedText.ca, highlightedText.es, ""),
+  "subText": coalesce(subText.ca, subText.es, ""),
+  "provinces": provinces[] {
+    "name": coalesce(name.ca, name.es, ""),
+    "slug": slug.current,
+    "mapIcon": mapIcon.asset->url,
+    "mapIconAlt": mapIcon.alt,
+    mapPositionX,
+    mapPositionY,
+    "locals": locals[]-> {
+      _id,
+      "locality": coalesce(locality.ca, locality.es, ""),
+      location,
+      phone,
+      address,
+      availability
+    }
+  }
+}
+```
+
+### Response Structure
+
+<ResponseField name="mapBackground" type="string">
+  Resolved URL for the interactive map background image
+</ResponseField>
+
+<ResponseField name="mapBackgroundAlt" type="string">
+  Alt text for map background image
+</ResponseField>
+
+<ResponseField name="highlightedText" type="string">
+  Localized page heading/highlighted text
+</ResponseField>
+
+<ResponseField name="subText" type="string">
+  Localized subtitle or descriptive text
+</ResponseField>
+
+<ResponseField name="provinces" type="array">
+  Array of provinces with pizzeria locations
+  <Expandable title="province properties">
+    <ResponseField name="name" type="string">
+      Localized province name
+    </ResponseField>
+    <ResponseField name="slug" type="string">
+      URL-friendly slug for the province
+    </ResponseField>
+    <ResponseField name="mapIcon" type="string">
+      Resolved URL for map marker icon
+    </ResponseField>
+    <ResponseField name="mapIconAlt" type="string">
+      Alt text for map icon
+    </ResponseField>
+    <ResponseField name="mapPositionX" type="number">
+      X-coordinate position on map (percentage or pixels)
+    </ResponseField>
+    <ResponseField name="mapPositionY" type="number">
+      Y-coordinate position on map (percentage or pixels)
+    </ResponseField>
+    <ResponseField name="locals" type="array">
+      Local pizzerias in this province (referenced documents)
+      <Expandable title="local properties">
+        <ResponseField name="_id" type="string">
+          Unique pizzeria identifier
+        </ResponseField>
+        <ResponseField name="locality" type="string">
+          Localized city/town name
+        </ResponseField>
+        <ResponseField name="location" type="object">
+          Geographic coordinates (lat/lng)
+        </ResponseField>
+        <ResponseField name="phone" type="string">
+          Contact phone number
+        </ResponseField>
+        <ResponseField name="address" type="string">
+          Street address
+        </ResponseField>
+        <ResponseField name="availability" type="string">
+          Availability status (e.g., "open", "closed", "coming_soon")
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Usage Example
+
+```typescript
+import { sanityClient } from '@/lib/sanity';
+import { getPizzeriasPageQuery } from '@/lib/sanityQueries';
+
+// In an Astro page component
+const lang = Astro.currentLocale || 'es';
+const pizzeriasData = await sanityClient.fetch(getPizzeriasPageQuery(lang));
+```
+
+```astro
+---
+// pages/pizzerias.astro
+import { sanityClient } from '@/lib/sanity';
+import { getPizzeriasPageQuery } from '@/lib/sanityQueries';
+
+const lang = Astro.currentLocale || 'es';
+const data = await sanityClient.fetch(getPizzeriasPageQuery(lang));
+---
+
+<section>
+  <h1>{data.highlightedText}</h1>
+  <p>{data.subText}</p>
+  
+  <div class="interactive-map" style={`background-image: url(${data.mapBackground})`}>
+    {data.provinces.map(province => (
+      <button 
+        class="map-marker"
+        style={`left: ${province.mapPositionX}%; top: ${province.mapPositionY}%`}
+      >
+        <img src={province.mapIcon} alt={province.mapIconAlt} />
+      </button>
+    ))}
+  </div>
+  
+  <div class="locations-list">
+    {data.provinces.map(province => (
+      <div>
+        <h2>{province.name}</h2>
+        <ul>
+          {province.locals.map(local => (
+            <li class={local.availability}>
+              <h3>{local.locality}</h3>
+              <p>{local.address}</p>
+              <a href={`tel:${local.phone}`}>{local.phone}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</section>
+```
+
+### Notes
+
+- The query uses `locals[]->` to dereference local pizzeria documents
+- Map position coordinates can be used for absolute positioning on the background image
+- Location data includes geographic coordinates for integration with mapping services
+- Availability status can be used to filter or style locations differently

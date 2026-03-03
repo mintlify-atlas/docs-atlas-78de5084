@@ -1,0 +1,174 @@
+---
+title: 'Submit CV Form'
+api: 'POST /actions/submitCvForm'
+description: 'Submit a job application with CV and cover letter attachments'
+---
+
+## Overview
+
+This server action handles job application submissions for Del Poble Pizzeria. It accepts form data including candidate information and optional file attachments (CV and cover letter), then sends an email notification to the configured recipient.
+
+## Input Parameters
+
+<ParamField path="nombre" type="string" required>
+  Candidate's full name. Must not be empty.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "El nombre es obligatorio"
+</ParamField>
+
+<ParamField path="email" type="string" required>
+  Candidate's email address.
+  
+  **Validation:** Must be a valid email format
+  
+  **Error message:** "Email inválido"
+</ParamField>
+
+<ParamField path="area" type="string" required>
+  Job area or position the candidate is applying for.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "El área es obligatoria"
+</ParamField>
+
+<ParamField path="experiencia" type="string" required>
+  Candidate's relevant experience.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "La experiencia es obligatoria"
+</ParamField>
+
+<ParamField path="ubicacion" type="string" required>
+  Candidate's location or preferred work location.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "La ubicación es obligatoria"
+</ParamField>
+
+<ParamField path="privacidad" type="string" required>
+  Privacy policy acceptance. Must be provided to submit the form.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "Debes aceptar la política de privacidad"
+</ParamField>
+
+<ParamField path="curriculum" type="File" optional>
+  CV/Resume file attachment. Extracted from form data.
+</ParamField>
+
+<ParamField path="carta" type="File" optional>
+  Cover letter file attachment. Extracted from form data.
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean" required>
+  Indicates whether the application was submitted successfully.
+</ResponseField>
+
+<ResponseField name="message" type="string" required>
+  User-friendly message describing the result of the operation.
+</ResponseField>
+
+## Behavior
+
+### Development Mode
+
+When SMTP credentials are not configured (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`), the action runs in development mode:
+
+- Application data is logged to console
+- No email is sent
+- Returns success response with development message
+
+### Production Mode
+
+When SMTP credentials are configured:
+
+1. Validates `EMAIL_TO` environment variable exists
+2. Extracts file attachments from form data
+3. Creates SMTP connection with serverless-optimized settings:
+   - No connection pooling (`pool: false`)
+   - Single connection (`maxConnections: 1`)
+   - 20-second timeout (`rateDelta: 20000`)
+   - Maximum 5 emails per connection (`rateLimit: 5`)
+4. Sends HTML-formatted email to configured recipient
+5. Attaches CV and cover letter files if provided
+6. Closes SMTP connection after sending
+
+### Email Content
+
+- **From:** "Del Poble Talento" `<SMTP_USER>`
+- **To:** EMAIL_TO (from environment)
+- **Subject:** "Nueva candidatura: {area} - {nombre}"
+- **Body:** HTML table with all candidate information and attachment filenames
+
+## Example Request
+
+```html
+<form method="POST" action="/actions/submitCvForm" enctype="multipart/form-data">
+  <input name="nombre" value="María García" />
+  <input name="email" value="maria@example.com" />
+  <input name="area" value="Cocinero" />
+  <input name="experiencia" value="5 años en pizzerías" />
+  <input name="ubicacion" value="Valencia" />
+  <input name="privacidad" value="accepted" />
+  <input type="file" name="curriculum" />
+  <input type="file" name="carta" />
+  <button type="submit">Enviar</button>
+</form>
+```
+
+## Example Response
+
+### Success (Production)
+
+```json
+{
+  "success": true,
+  "message": "¡Candidatura enviada correctamente! Nos pondremos en contacto contigo."
+}
+```
+
+### Success (Development)
+
+```json
+{
+  "success": true,
+  "message": "Candidatura enviada correctamente (modo desarrollo)"
+}
+```
+
+### Error (Configuration)
+
+```json
+{
+  "success": false,
+  "message": "Error de configuración del servidor"
+}
+```
+
+### Error (General)
+
+```json
+{
+  "success": false,
+  "message": "Ha ocurrido un error. Por favor, inténtalo de nuevo."
+}
+```
+
+## Error Handling
+
+- **Validation errors:** Returns error with specific field validation message
+- **Missing EMAIL_TO:** Returns configuration error
+- **SMTP errors:** Caught and returns generic error message
+- **File processing errors:** Gracefully handles missing or invalid files
+
+## Source Code
+
+Defined in `src/actions/index.ts:33-119`

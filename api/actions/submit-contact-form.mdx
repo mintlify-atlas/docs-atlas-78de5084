@@ -1,0 +1,152 @@
+---
+title: 'Submit Contact Form'
+api: 'POST /actions/submitContactForm'
+description: 'Submit a contact form message to Del Poble Pizzeria'
+---
+
+## Overview
+
+This server action handles general contact form submissions. It accepts form data with contact information and message, then sends an email notification to the configured recipient.
+
+## Input Parameters
+
+<ParamField path="nombre" type="string" required>
+  Contact's full name. Must not be empty.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "El nombre es obligatorio"
+</ParamField>
+
+<ParamField path="email" type="string" required>
+  Contact's email address.
+  
+  **Validation:** Must be a valid email format
+  
+  **Error message:** "Email inválido"
+</ParamField>
+
+<ParamField path="motivo" type="string" required>
+  Reason for contact or subject of the message.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "El motivo de contacto es obligatorio"
+</ParamField>
+
+<ParamField path="mensaje" type="string" required>
+  The message content.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "El mensaje es obligatorio"
+</ParamField>
+
+<ParamField path="privacidad" type="string" required>
+  Privacy policy acceptance. Must be provided to submit the form.
+  
+  **Validation:** Minimum 1 character
+  
+  **Error message:** "Debes aceptar la política de privacidad"
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean" required>
+  Indicates whether the contact message was submitted successfully.
+</ResponseField>
+
+<ResponseField name="message" type="string" required>
+  User-friendly message describing the result of the operation.
+</ResponseField>
+
+## Behavior
+
+### Development Mode
+
+When SMTP credentials are not configured (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`), the action runs in development mode:
+
+- Contact data is logged to console
+- No email is sent
+- Returns success response with development message
+
+### Production Mode
+
+When SMTP credentials are configured:
+
+1. Validates `EMAIL_TO` environment variable exists
+2. Creates SMTP connection with serverless-optimized settings:
+   - No connection pooling (`pool: false`)
+   - Single connection (`maxConnections: 1`)
+   - 20-second timeout (`rateDelta: 20000`)
+   - Maximum 5 emails per connection (`rateLimit: 5`)
+3. Sends HTML-formatted email to configured recipient
+4. Closes SMTP connection after sending
+
+### Email Content
+
+- **From:** "Del Poble Contacto" `<SMTP_USER>`
+- **To:** EMAIL_TO (from environment)
+- **Subject:** "Nuevo contacto: {motivo} - {nombre}"
+- **Body:** HTML table with all contact information and message
+
+## Example Request
+
+```html
+<form method="POST" action="/actions/submitContactForm">
+  <input name="nombre" value="Juan Pérez" />
+  <input name="email" value="juan@example.com" />
+  <input name="motivo" value="Reserva de evento" />
+  <textarea name="mensaje">Me gustaría reservar el local para un evento privado...</textarea>
+  <input name="privacidad" value="accepted" />
+  <button type="submit">Enviar</button>
+</form>
+```
+
+## Example Response
+
+### Success (Production)
+
+```json
+{
+  "success": true,
+  "message": "¡Mensaje enviado correctamente! Nos pondremos en contacto contigo."
+}
+```
+
+### Success (Development)
+
+```json
+{
+  "success": true,
+  "message": "Mensaje enviado correctamente (modo desarrollo)"
+}
+```
+
+### Error (Configuration)
+
+```json
+{
+  "success": false,
+  "message": "Error de configuración del servidor"
+}
+```
+
+### Error (General)
+
+```json
+{
+  "success": false,
+  "message": "Ha ocurrido un error. Por favor, inténtalo de nuevo."
+}
+```
+
+## Error Handling
+
+- **Validation errors:** Returns error with specific field validation message
+- **Missing EMAIL_TO:** Returns configuration error
+- **SMTP errors:** Caught and returns generic error message
+
+## Source Code
+
+Defined in `src/actions/index.ts:122-178`

@@ -1,0 +1,288 @@
+---
+title: 'Historia Page Query'
+description: 'Query function to fetch history page content with gallery and localized sections'
+---
+
+## getHistoriaPageQuery
+
+Retrieves all content for the Historia (history) page including background images, gallery items, and multiple content sections.
+
+### Function Signature
+
+```typescript
+getHistoriaPageQuery(lang: string = 'es'): string
+```
+
+### Parameters
+
+<ParamField path="lang" type="string" default="es">
+  Language code for localized content. Supports 'es', 'ca', 'en', etc. Falls back to Spanish if translation not available.
+</ParamField>
+
+### GROQ Query
+
+```groq
+*[_type == "historiaPage" && _id == "historiaPage"][0] {
+  backgroundImages {
+    desktop,
+    mobile
+  },
+  "headHighlightedText": {
+    "desktop": coalesce(headHighlightedText.desktop.ca, headHighlightedText.desktop.es, ""),
+    "tablet": coalesce(headHighlightedText.tablet.ca, headHighlightedText.tablet.es, ""),
+    "mobile": coalesce(headHighlightedText.mobile.ca, headHighlightedText.mobile.es, "")
+  },
+  "sectionTwoGallery": sectionTwoGallery[] {
+    "url": image.asset->url,
+    "alt": image.alt,
+    "title": coalesce(title.ca, title.es, ""),
+    "text": coalesce(text.ca, text.es, "")
+  },
+  "sectionTwoHighlightedText": {
+    "desktop": coalesce(sectionTwoHighlightedText.desktop.ca, sectionTwoHighlightedText.desktop.es, ""),
+    "tablet": coalesce(sectionTwoHighlightedText.tablet.ca, sectionTwoHighlightedText.tablet.es, ""),
+    "mobile": coalesce(sectionTwoHighlightedText.mobile.ca, sectionTwoHighlightedText.mobile.es, "")
+  },
+  sectionThreeImages {
+    image1,
+    image2,
+    image3
+  },
+  sectionThreeMobileImage,
+  floatingImage,
+  sectionFourHighlightedText {
+    "desktop": coalesce(desktop.ca, desktop.es, ""),
+    "mobile": coalesce(mobile.ca, mobile.es, "")
+  },
+  sectionFourImage,
+  "sectionFourBodyText": coalesce(sectionFourBodyText.ca, sectionFourBodyText.es, ""),
+  sectionFourImages {
+    image1,
+    image2,
+    image3,
+    image4
+  },
+  sectionFiveColumn1 {
+    highlightedText {
+      "desktop": coalesce(desktop.ca, desktop.es, ""),
+      "tablet": coalesce(tablet.ca, tablet.es, ""),
+      "mobile": coalesce(mobile.ca, mobile.es, "")
+    },
+    "bodyText": coalesce(bodyText.ca, bodyText.es, ""),
+    "buttonText": coalesce(buttonText.ca, buttonText.es, ""),
+    buttonUrl
+  },
+  sectionFiveColumn2 {
+    backgroundImage,
+    image1,
+    image2,
+    image3
+  },
+  sectionLastHistoriaColumn1 {
+    highlightedText {
+      "desktop": coalesce(desktop.ca, desktop.es, ""),
+      "tablet": coalesce(tablet.ca, tablet.es, ""),
+      "mobile": coalesce(mobile.ca, mobile.es, "")
+    },
+    "bodyText": coalesce(bodyText.ca, bodyText.es, ""),
+    "buttonText": coalesce(buttonText.ca, buttonText.es, ""),
+    buttonUrl
+  },
+  sectionLastHistoriaColumn2 {
+    backgroundImage
+  },
+  "scrollHorizontalHighlightedText": {
+    "desktop": coalesce(scrollHorizontalHighlightedText.desktop.ca, scrollHorizontalHighlightedText.desktop.es, ""),
+    "tablet": coalesce(scrollHorizontalHighlightedText.tablet.ca, scrollHorizontalHighlightedText.tablet.es, ""),
+    "mobile": coalesce(scrollHorizontalHighlightedText.mobile.ca, scrollHorizontalHighlightedText.mobile.es, "")
+  },
+  "scrollHorizontalImage": scrollHorizontalImage.asset->url,
+  "scrollHorizontalImageAlt": scrollHorizontalImage.alt,
+  "scrollHorizontalItems": scrollHorizontalItems[] {
+    "imageUrl": image.asset->url,
+    "imageAlt": image.alt,
+    "text": coalesce(text.ca, text.es, "")
+  }
+}
+```
+
+### Response Structure
+
+<ResponseField name="backgroundImages" type="object">
+  Page background images
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop background image reference
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile background image reference
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="headHighlightedText" type="object">
+  Header highlighted text with responsive variations
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop version of highlighted text
+    </ResponseField>
+    <ResponseField name="tablet" type="string">
+      Tablet version of highlighted text
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile version of highlighted text
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="sectionTwoGallery" type="array">
+  Gallery items with localized content
+  <Expandable title="item properties">
+    <ResponseField name="url" type="string">
+      Resolved image URL from Sanity CDN
+    </ResponseField>
+    <ResponseField name="alt" type="string">
+      Image alt text
+    </ResponseField>
+    <ResponseField name="title" type="string">
+      Localized gallery item title
+    </ResponseField>
+    <ResponseField name="text" type="string">
+      Localized gallery item description
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="sectionTwoHighlightedText" type="object">
+  Section two responsive highlighted text
+</ResponseField>
+
+<ResponseField name="sectionThreeImages" type="object">
+  Section three image references (3 images)
+</ResponseField>
+
+<ResponseField name="sectionThreeMobileImage" type="string">
+  Mobile-specific image for section three
+</ResponseField>
+
+<ResponseField name="floatingImage" type="string">
+  Floating decorative image reference
+</ResponseField>
+
+<ResponseField name="sectionFourHighlightedText" type="object">
+  Section four responsive highlighted text
+</ResponseField>
+
+<ResponseField name="sectionFourImage" type="string">
+  Section four main image reference
+</ResponseField>
+
+<ResponseField name="sectionFourBodyText" type="string">
+  Localized body text for section four
+</ResponseField>
+
+<ResponseField name="sectionFourImages" type="object">
+  Section four gallery images (4 images)
+</ResponseField>
+
+<ResponseField name="sectionFiveColumn1" type="object">
+  Left column content for section five
+  <Expandable title="properties">
+    <ResponseField name="highlightedText" type="object">
+      Responsive highlighted text
+    </ResponseField>
+    <ResponseField name="bodyText" type="string">
+      Localized body text
+    </ResponseField>
+    <ResponseField name="buttonText" type="string">
+      Localized button text
+    </ResponseField>
+    <ResponseField name="buttonUrl" type="string">
+      Button URL
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="sectionFiveColumn2" type="object">
+  Right column images for section five
+</ResponseField>
+
+<ResponseField name="sectionLastHistoriaColumn1" type="object">
+  Final section left column with CTA
+</ResponseField>
+
+<ResponseField name="sectionLastHistoriaColumn2" type="object">
+  Final section right column with background image
+</ResponseField>
+
+<ResponseField name="scrollHorizontalHighlightedText" type="object">
+  Horizontal scroll section responsive highlighted text
+</ResponseField>
+
+<ResponseField name="scrollHorizontalImage" type="string">
+  Resolved URL for horizontal scroll background image
+</ResponseField>
+
+<ResponseField name="scrollHorizontalImageAlt" type="string">
+  Alt text for horizontal scroll image
+</ResponseField>
+
+<ResponseField name="scrollHorizontalItems" type="array">
+  Items for horizontal scrolling section
+  <Expandable title="item properties">
+    <ResponseField name="imageUrl" type="string">
+      Resolved image URL
+    </ResponseField>
+    <ResponseField name="imageAlt" type="string">
+      Image alt text
+    </ResponseField>
+    <ResponseField name="text" type="string">
+      Localized item text
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Usage Example
+
+```typescript
+import { sanityClient } from '@/lib/sanity';
+import { getHistoriaPageQuery } from '@/lib/sanityQueries';
+
+// In an Astro page component
+const lang = Astro.currentLocale || 'es';
+const historiaData = await sanityClient.fetch(getHistoriaPageQuery(lang));
+```
+
+```astro
+---
+// pages/historia.astro
+import { sanityClient } from '@/lib/sanity';
+import { getHistoriaPageQuery } from '@/lib/sanityQueries';
+
+const lang = Astro.currentLocale || 'es';
+const data = await sanityClient.fetch(getHistoriaPageQuery(lang));
+---
+
+<section>
+  <h1>{data.headHighlightedText.desktop}</h1>
+  
+  <div class="gallery">
+    {data.sectionTwoGallery.map(item => (
+      <div>
+        <img src={item.url} alt={item.alt} />
+        <h3>{item.title}</h3>
+        <p>{item.text}</p>
+      </div>
+    ))}
+  </div>
+  
+  <div class="horizontal-scroll">
+    {data.scrollHorizontalItems.map(item => (
+      <div>
+        <img src={item.imageUrl} alt={item.imageAlt} />
+        <p>{item.text}</p>
+      </div>
+    ))}
+  </div>
+</section>
+```

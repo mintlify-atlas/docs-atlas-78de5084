@@ -1,0 +1,673 @@
+---
+title: Job Offers (Talento)
+description: Job listings, CV upload form, search functionality, and career page features
+---
+
+The Talento (Talent/Careers) page showcases job opportunities with search, filtering, and a CV submission form.
+
+## Page Overview
+
+**File:** `src/pages/talento.astro`
+**Data Sources:**
+- `getTrabajaConNosotrosPageQuery(lang)` - Page content
+- `getJobOffersQuery(lang)` - Active job listings
+- `getProvincesQuery(lang)` - Location filter options
+
+**View Transition:** `main-talento`
+
+## Page Sections
+
+### Hero Section
+
+**File:** `src/pages/talento.astro:33-95`
+
+Features responsive highlighted text and an auto-rotating image gallery:
+
+```astro
+<section class="head-section general-x-padding">
+  {/* Responsive highlighted text (desktop/tablet/mobile) */}
+  
+  {trabajaPageData.gallery && trabajaPageData.gallery.length > 0 && (
+    <div class="swiper-container">
+      <img src="/images/logo_green.svg" class="logo">
+      <div class="swiper trabaja-swiper">
+        <div class="swiper-wrapper">
+          {trabajaPageData.gallery.map((image) => (
+            <div class="swiper-slide">
+              <img src={image.url} alt={image.alt} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )}
+  
+  <Image src={pizzaIcon} alt="Pizza icon" class="icon" />
+  <p class="body-text">{trabajaPageData.bodyText}</p>
+</section>
+```
+
+---
+
+## Gallery Swiper
+
+### Configuration
+
+**File:** `src/pages/talento.astro:301-335`
+
+```javascript
+const swiper = new Swiper('.trabaja-swiper', {
+  modules: [Autoplay, FreeMode],
+  slidesPerView: 'auto',
+  spaceBetween: 400,      // Desktop
+  freeMode: true,
+  loop: true,
+  autoplay: {
+    delay: 0,             // Continuous scroll
+    disableOnInteraction: false,
+  },
+  speed: 9000,            // 9 seconds per loop
+  allowTouchMove: false,
+  simulateTouch: false,
+  grabCursor: false,
+  breakpoints: {
+    0: { spaceBetween: 80 },      // Mobile
+    599: { spaceBetween: 200 },   // Tablet
+    1001: { spaceBetween: 400 },  // Desktop
+  },
+});
+```
+
+**Behavior:**
+- Infinite loop with autoplay
+- No user interaction (touch disabled)
+- Auto-starts after 950ms delay (when Lenis scroll is ready)
+
+### Image Rotation Animations
+
+**File:** `src/pages/talento.astro:337-382`
+
+Each gallery image has unique rotation animation:
+
+```javascript
+const rotationConfigs = [
+  { initial: -12.56, from: -12.563, to: 13.787, duration: 12 },
+  { initial: 13.63, from: -10.2, to: 11.5, duration: 14 },
+  { initial: -11.2, from: -14.8, to: 15.3, duration: 13 },
+  // ... 20 total configs
+];
+
+images.forEach((img, index) => {
+  const config = rotationConfigs[index % rotationConfigs.length];
+  
+  gsap.set(img, { rotation: config.initial });
+  
+  gsap.timeline({ repeat: -1, yoyo: true })
+    .to(img, {
+      rotation: config.initial > 0 ? config.to : config.from,
+      duration: config.duration / 2,
+      ease: "power1.inOut",
+    })
+    .to(img, {
+      rotation: config.initial > 0 ? config.from : config.to,
+      duration: config.duration / 2,
+      ease: "power1.inOut",
+    });
+});
+```
+
+**Effect:** Images continuously rock back and forth at different speeds and angles, creating dynamic visual interest.
+
+---
+
+## Job Search
+
+### Search Input
+
+**File:** `src/pages/talento.astro:100-112`
+
+```astro
+<div class="search-container">
+  <img src="/images/place_icon.svg" class="place_icon">
+  <input
+    type="text"
+    id="jobSearch"
+    class="search-input"
+    placeholder={trabajaPageData.searchPlaceholder || t('talento.search.placeholder')}
+  />
+  <div class="cross-btn">
+    <img src="/images/cross.svg">
+  </div>
+</div>
+```
+
+### Search Functionality
+
+**File:** `src/pages/talento.astro:543-558`
+
+Real-time filtering across multiple fields:
+
+```javascript
+function filterJobs(searchTerm: string) {
+  const term = searchTerm.toLowerCase().trim();
+  
+  if (!term) {
+    filteredJobs = [...allJobs];
+  } else {
+    filteredJobs = allJobs.filter(job =>
+      job.title.toLowerCase().includes(term) ||
+      job.description.toLowerCase().includes(term) ||
+      job.province.name.toLowerCase().includes(term) ||
+      (job.locality && job.locality.toLowerCase().includes(term))
+    );
+  }
+  
+  renderJobs();
+}
+```
+
+**Search targets:**
+- Job title
+- Job description
+- Province name
+- Locality/city name
+
+**Event listener:**
+
+```javascript
+searchInput.addEventListener('input', (e) => {
+  const target = e.target as HTMLInputElement;
+  filterJobs(target.value);
+});
+```
+
+---
+
+## Job Listings
+
+### Data Container
+
+**File:** `src/pages/talento.astro:119-136`
+
+Job data is embedded in the DOM for client-side rendering:
+
+```astro
+<div class="jobs-container" id="jobsContainer"
+  data-all-jobs={JSON.stringify(jobOffers)}
+  data-no-jobs={t('talento.no-jobs')}
+  data-como-llegar={t('talento.jobs.como-llegar')}
+  data-inscribirse={t('talento.jobs.inscribirse')}
+  data-sending={t('talento.form.sending')}
+  data-error={t('talento.form.error')}
+  data-success={t('talento.form.success')}
+>
+  <div id="provincesList">
+    {/* Rendered by JavaScript */}
+  </div>
+</div>
+```
+
+### Grouping by Province
+
+**File:** `src/pages/talento.astro:409-421`
+
+```javascript
+function groupJobsByProvince(jobs: any[]) {
+  const grouped: Record<string, any[]> = {};
+  
+  jobs.forEach(job => {
+    const provinceName = job.province.name;
+    if (!grouped[provinceName]) {
+      grouped[provinceName] = [];
+    }
+    grouped[provinceName].push(job);
+  });
+  
+  return grouped;
+}
+```
+
+### Rendering Job Cards
+
+**File:** `src/pages/talento.astro:423-491`
+
+<Steps>
+
+<Step title="Group jobs by province">
+
+```javascript
+const groupedJobs = groupJobsByProvince(filteredJobs);
+```
+
+</Step>
+
+<Step title="Render province sections">
+
+```javascript
+Object.keys(groupedJobs).map(provinceName => {
+  const provinceJobs = groupedJobs[provinceName];
+  
+  return `
+    <div class="province-section">
+      <h2 class="province-name">
+        ${provinceName} <sup>(${provinceJobs.length})</sup>
+      </h2>
+      <div class="jobs-grid">
+        {/* Job cards */}
+      </div>
+    </div>
+  `;
+})
+```
+
+</Step>
+
+<Step title="Render job cards with accordion">
+
+```javascript
+provinceJobs.map((job) => {
+  const isFirst = globalIndex === 0;  // First card globally
+  globalIndex++;
+  
+  return `
+    <div class="job-card ${isFirst ? 'is-open' : ''}">
+      <div class="job-card-left">
+        <div class="job-card-header">{/* Clickable header */}</div>
+        <div class="job-card-body" style="${isFirst ? '' : 'height: 0; overflow: hidden;'}">
+          <p class="job-description">${job.description}</p>
+        </div>
+      </div>
+      <div class="job-card-link">
+        <a href="" class="btn bright-orange">${txtInscribirse}</a>
+      </div>
+    </div>
+  `;
+})
+```
+
+</Step>
+
+<Step title="Initialize accordions">
+
+```javascript
+initAccordions();
+```
+
+</Step>
+
+</Steps>
+
+### Job Card Structure
+
+```html
+<div class="job-card">
+  <div class="job-card-left">
+    <div class="job-card-header">
+      <div class="top">
+        <h3 class="job-title">
+          <img src="/images/pizza_icono.svg" class="icon">
+          {locality}
+        </h3>
+        <p class="job-locality">| {title}</p>
+      </div>
+      
+      <div class="right">
+        <p class="job-address">{address}</p>
+        <a href="{location}" class="local-map-link">
+          Cómo llegar
+        </a>
+      </div>
+    </div>
+    
+    <div class="job-card-body">
+      <p class="job-description">{description}</p>
+    </div>
+  </div>
+  
+  <div class="job-card-link">
+    <a href="" class="btn bright-orange">Inscribirme</a>
+  </div>
+</div>
+```
+
+### Accordion Functionality
+
+**File:** `src/pages/talento.astro:493-541`
+
+```javascript
+function initAccordions() {
+  const cards = provincesList.querySelectorAll('.job-card');
+  
+  cards.forEach(card => {
+    const header = card.querySelector('.job-card-header');
+    const body = card.querySelector('.job-card-body');
+    const icon = card.querySelector('.job-title .icon');
+    
+    // First card open by default
+    if (card.classList.contains('is-open')) {
+      gsap.set(body, { height: 'auto', overflow: 'hidden' });
+      if (icon) gsap.set(icon, { rotation: 90 });
+    }
+    
+    header.addEventListener('click', () => {
+      const isOpen = card.classList.contains('is-open');
+      
+      if (isOpen) {
+        // Close
+        gsap.to(body, { height: 0, duration: 0.4, ease: 'power2.inOut' });
+        gsap.to(icon, { rotation: 0, duration: 0.3, ease: 'power2.inOut' });
+        card.classList.remove('is-open');
+      } else {
+        // Open
+        const targetHeight = body.offsetHeight;
+        gsap.fromTo(body, { height: 0 }, { height: targetHeight, duration: 0.4, ease: 'power2.inOut' });
+        gsap.to(icon, { rotation: 90, duration: 0.3, ease: 'power2.inOut' });
+        card.classList.add('is-open');
+      }
+    });
+  });
+}
+```
+
+**Animation:**
+- Body height: 0 ↔ auto (0.4s, power2.inOut)
+- Icon rotation: 0° ↔ 90° (0.3s, power2.inOut)
+
+---
+
+## CV Upload Form
+
+**File:** `src/pages/talento.astro:138-278`
+
+### Form Structure
+
+```astro
+<section class="cv general-x-padding">
+  <picture class="cv__bg">
+    {/* Responsive background images */}
+  </picture>
+  
+  <div class="cv__content">
+    {/* Highlighted text */}
+    <Image src={pizzaIcon} alt="Pizza icon" class="icon" />
+    <p class="cv__body-text">{cvBodyText}</p>
+    
+    <form class="cv__form" method="POST" action={actions.submitCvForm} enctype="multipart/form-data">
+      {/* Form fields */}
+    </form>
+  </div>
+</section>
+```
+
+### Form Fields
+
+<Steps>
+
+<Step title="Personal Information (Row 1)">
+
+```html
+<input type="text" name="nombre" placeholder="Nombre y apellidos" required />
+<input type="email" name="email" placeholder="Email" required />
+```
+
+</Step>
+
+<Step title="Job Details (Row 2)">
+
+```html
+<select name="area" required>
+  <option value="" disabled selected>Área de interés</option>
+  <option value="cocina">Cocina</option>
+  <option value="sala">Sala</option>
+  <option value="delivery">Delivery</option>
+  <option value="gestion">Gestión</option>
+  <option value="marketing">Marketing</option>
+  <option value="otro">Otro</option>
+</select>
+
+<select name="experiencia" required>
+  <option value="" disabled selected>Experiencia</option>
+  <option value="sin-experiencia">Sin experiencia</option>
+  <option value="menos-1">Menos de 1 año</option>
+  <option value="1-3">1-3 años</option>
+  <option value="3-5">3-5 años</option>
+  <option value="mas-5">Más de 5 años</option>
+</select>
+
+<select name="ubicacion" required>
+  <option value="" disabled selected>Ubicación preferida</option>
+  {provinces.map(province => (
+    <option value={province.slug}>{province.name}</option>
+  ))}
+</select>
+```
+
+</Step>
+
+<Step title="File Uploads (Row 3)">
+
+```html
+<div class="cv__field cv__field--file w-50">
+  <p class="cv__file-label-text">Currículum (opcional)</p>
+  <label class="cv__file-label">
+    <input type="file" name="curriculum" accept=".pdf,.doc,.docx" />
+    <span class="cv__file-box">
+      <img src="/images/06.dp_descargas.svg" class="cv__file-icon" />
+      <span class="cv__file-max">Máx. 10MB</span>
+      <span class="cv__file-name">Ningún archivo seleccionado</span>
+    </span>
+  </label>
+</div>
+
+<div class="cv__field cv__field--file w-50">
+  <p class="cv__file-label-text">Carta de presentación (opcional)</p>
+  <label class="cv__file-label">
+    <input type="file" name="carta" accept=".pdf,.doc,.docx" />
+    {/* Same structure */}
+  </label>
+</div>
+```
+
+**File input styling:** Hidden input with custom label that displays filename.
+
+</Step>
+
+<Step title="Privacy and Submit">
+
+```html
+<label class="cv__checkbox">
+  <input type="checkbox" name="privacidad" value="accepted" required />
+  <span set:html={t('talento.form.privacy')} />
+</label>
+
+<button type="submit" class="btn bright-orange">
+  {t('talento.form.submit')}
+</button>
+```
+
+</Step>
+
+</Steps>
+
+### File Name Display
+
+**File:** `src/pages/talento.astro:588-604`
+
+```javascript
+const fileInputs = document.querySelectorAll('.cv__field--file input[type="file"]');
+fileInputs.forEach(input => {
+  input.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    const box = target.closest('.cv__field--file')?.querySelector('.cv__file-box');
+    const nameSpan = box?.querySelector('.cv__file-name');
+    const maxSpan = box?.querySelector('.cv__file-max');
+    
+    if (nameSpan) {
+      const fileName = target.files?.[0]?.name || '';
+      nameSpan.textContent = fileName;
+      nameSpan.classList.toggle('has-file', !!fileName);
+      
+      if (maxSpan) {
+        maxSpan.style.display = fileName ? 'none' : '';
+      }
+    }
+  });
+});
+```
+
+**Behavior:**
+- Shows filename when file selected
+- Hides "Máx. 10MB" text
+- Adds `has-file` class for styling
+
+### Validation Schema
+
+**File:** `src/actions/index.ts:33-42`
+
+```typescript
+input: z.object({
+  nombre: z.string().min(1, 'El nombre es obligatorio'),
+  email: z.string().email('Email inválido'),
+  area: z.string().min(1, 'El área es obligatoria'),
+  experiencia: z.string().min(1, 'La experiencia es obligatoria'),
+  ubicacion: z.string().min(1, 'La ubicación es obligatoria'),
+  privacidad: z.string().min(1, 'Debes aceptar la política de privacidad'),
+})
+```
+
+**Note:** File uploads are optional and validated separately in the handler.
+
+### Form Submission
+
+**File:** `src/pages/talento.astro:614-661`
+
+```javascript
+cvForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const btn = cvForm.querySelector('button[type="submit"]');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = txtSending;
+  
+  try {
+    const formData = new FormData(cvForm);
+    const { data, error } = await actions.submitCvForm(formData);
+    
+    let msgDiv = cvForm.querySelector('.cv__message');
+    if (!msgDiv) {
+      msgDiv = document.createElement('div');
+      msgDiv.className = 'cv__message';
+      cvForm.appendChild(msgDiv);
+    }
+    
+    if (error || !data?.success) {
+      msgDiv.className = 'cv__message error';
+      msgDiv.textContent = data?.message || txtError;
+    } else {
+      msgDiv.className = 'cv__message success';
+      msgDiv.textContent = data.message || txtSuccess;
+      cvForm.reset();
+      // Reset file inputs UI
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+});
+```
+
+### Email with Attachments
+
+**File:** `src/actions/index.ts:44-117`
+
+Files are extracted from FormData and sent as email attachments:
+
+```typescript
+const formData = await context.request.formData();
+const cvFile = formData.get('curriculum') as File | null;
+const cartaFile = formData.get('carta') as File | null;
+
+const attachments: any[] = [];
+
+if (cvFile && cvFile.size > 0) {
+  const cvBuffer = Buffer.from(await cvFile.arrayBuffer());
+  attachments.push({
+    filename: cvFile.name,
+    content: cvBuffer,
+  });
+}
+
+if (cartaFile && cartaFile.size > 0) {
+  const cartaBuffer = Buffer.from(await cartaFile.arrayBuffer());
+  attachments.push({
+    filename: cartaFile.name,
+    content: cartaBuffer,
+  });
+}
+
+await transporter.sendMail({
+  from: `"Del Poble Talento" <${smtpUser}>`,
+  to: emailTo,
+  subject: `Nueva candidatura: ${input.area} - ${input.nombre}`,
+  html: // ... email template
+  attachments,
+});
+```
+
+---
+
+## Job Data Structure
+
+```typescript
+interface JobOffer {
+  title: string;          // "Pizzero/a"
+  description: string;    // Full job description
+  locality: string;       // "Valencia Centro"
+  address?: string;       // "Calle Mayor, 15"
+  location?: string;      // Google Maps URL
+  province: {
+    name: string;         // "Valencia"
+    slug: string;         // "valencia"
+  };
+}
+```
+
+---
+
+## Performance Notes
+
+### Client-Side Rendering
+
+Job listings render client-side for instant search filtering without page reload.
+
+### Swiper Instance Management
+
+```javascript
+let trabajaSwiperInstance: Swiper | null = null;
+
+function initTalentoSwiper() {
+  // Destroy previous instance on SPA navigation
+  if (trabajaSwiperInstance) {
+    trabajaSwiperInstance.destroy(true, true);
+    trabajaSwiperInstance = null;
+  }
+  
+  trabajaSwiperInstance = new Swiper(...);
+}
+```
+
+### Delayed Autoplay Start
+
+Swiper autoplay starts after 950ms to ensure smooth layout:
+
+```javascript
+setTimeout(() => {
+  if (trabajaSwiperInstance) {
+    trabajaSwiperInstance.update();
+    trabajaSwiperInstance.autoplay.start();
+  }
+}, 950);
+```

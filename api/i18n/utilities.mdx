@@ -1,0 +1,269 @@
+---
+title: 'I18n Utilities'
+description: 'Helper functions for internationalization and language routing'
+---
+
+## Overview
+
+The i18n utilities module (`src/i18n/utils.ts`) provides helper functions for language detection, translation access, and URL localization in the Del Poble Pizzeria website.
+
+## Functions
+
+### getLangFromUrl
+
+Extracts the language code from a URL pathname. Returns the default language if no valid language is found.
+
+```typescript
+function getLangFromUrl(url: URL): keyof typeof ui
+```
+
+<ParamField path="url" type="URL" required>
+  The URL object to extract the language from
+</ParamField>
+
+**Returns:** Language code ('es', 'en', or 'val')
+
+#### Example
+
+```astro
+---
+import { getLangFromUrl } from '@/i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+// URL: https://delpoblepizzeria.com/en/carta → 'en'
+// URL: https://delpoblepizzeria.com/val/pizzerias → 'val'
+// URL: https://delpoblepizzeria.com/contacto → 'es' (default)
+---
+```
+
+#### Implementation Details
+
+The function splits the pathname by `/` and checks if the second segment matches any key in the `ui` object:
+
+```typescript
+const [, lang] = url.pathname.split('/');
+if (lang in ui) return lang as keyof typeof ui;
+return defaultLang;
+```
+
+---
+
+### useTranslations
+
+Creates a translation function for a specific language. Returns a function that retrieves translated strings by key.
+
+```typescript
+function useTranslations(lang: keyof typeof ui): 
+  (key: keyof typeof ui[typeof defaultLang]) => string
+```
+
+<ParamField path="lang" type="'es' | 'en' | 'val'" required>
+  The language code to use for translations
+</ParamField>
+
+**Returns:** A translation function `t(key)` that returns the translated string
+
+#### Example
+
+```astro
+---
+import { getLangFromUrl, useTranslations } from '@/i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<header>
+  <a href="/">{t('header.nav.carta')}</a>
+  <a href="/pizzerias">{t('header.nav.pizzerias')}</a>
+  <a href="/talento">{t('header.nav.talento')}</a>
+</header>
+
+<button>{t('header.order')}</button>
+```
+
+#### Fallback Behavior
+
+If a translation key doesn't exist in the specified language, it falls back to the default language (Spanish):
+
+```typescript
+return ui[lang][key] || ui[defaultLang][key];
+```
+
+---
+
+### getRouteFromUrl
+
+Extracts the route/page name from a URL, removing the language prefix.
+
+```typescript
+function getRouteFromUrl(url: URL): string | undefined
+```
+
+<ParamField path="url" type="URL" required>
+  The URL object to extract the route from
+</ParamField>
+
+**Returns:** The route name without language prefix, or `undefined` if not found
+
+#### Example
+
+```typescript
+import { getRouteFromUrl } from '@/i18n/utils';
+
+const route = getRouteFromUrl(new URL('https://example.com/en/carta'));
+// Returns: 'carta'
+
+const route2 = getRouteFromUrl(new URL('https://example.com/pizzerias'));
+// Returns: 'pizzerias'
+```
+
+---
+
+### getPathWithoutLang
+
+Returns the page path without any language prefix.
+
+```typescript
+function getPathWithoutLang(url: URL): string
+```
+
+<ParamField path="url" type="URL" required>
+  The URL object to process
+</ParamField>
+
+**Returns:** The pathname without language prefix
+
+#### Example
+
+```typescript
+import { getPathWithoutLang } from '@/i18n/utils';
+
+getPathWithoutLang(new URL('https://example.com/en/contacto'));
+// Returns: '/contacto'
+
+getPathWithoutLang(new URL('https://example.com/val/carta'));
+// Returns: '/carta'
+
+getPathWithoutLang(new URL('https://example.com/contacto'));
+// Returns: '/contacto'
+```
+
+---
+
+### getLocalizedUrl
+
+Converts a URL to its equivalent in a different language.
+
+```typescript
+function getLocalizedUrl(url: URL, targetLang: keyof typeof ui): string
+```
+
+<ParamField path="url" type="URL" required>
+  The current URL
+</ParamField>
+
+<ParamField path="targetLang" type="'es' | 'en' | 'val'" required>
+  The target language code
+</ParamField>
+
+**Returns:** The localized URL path
+
+#### Example
+
+```astro
+---
+import { getLocalizedUrl, getLangFromUrl } from '@/i18n/utils';
+
+const currentLang = getLangFromUrl(Astro.url);
+const languages = ['es', 'en', 'val'];
+---
+
+<nav>
+  {languages.map(lang => (
+    <a 
+      href={getLocalizedUrl(Astro.url, lang)}
+      aria-current={currentLang === lang ? 'page' : undefined}
+    >
+      {lang.toUpperCase()}
+    </a>
+  ))}
+</nav>
+```
+
+#### Behavior
+
+```typescript
+// Current URL: /en/contacto, Target: val
+getLocalizedUrl(url, 'val'); // Returns: '/val/contacto'
+
+// Current URL: /contacto, Target: en
+getLocalizedUrl(url, 'en'); // Returns: '/en/contacto'
+
+// Current URL: /en/contacto, Target: es (default)
+getLocalizedUrl(url, 'es'); // Returns: '/contacto'
+```
+
+---
+
+## Common Patterns
+
+### Language Switcher Component
+
+```astro
+---
+import { getLangFromUrl, getLocalizedUrl } from '@/i18n/utils';
+import { languages } from '@/i18n/ui';
+
+const currentLang = getLangFromUrl(Astro.url);
+---
+
+<div class="language-switcher">
+  {Object.entries(languages).map(([code, name]) => (
+    <a 
+      href={getLocalizedUrl(Astro.url, code)}
+      class:list={[{ active: currentLang === code }]}
+    >
+      {name}
+    </a>
+  ))}
+</div>
+```
+
+### Translated Navigation
+
+```astro
+---
+import { getLangFromUrl, useTranslations } from '@/i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<nav>
+  <a href={`/${lang}/carta`}>{t('header.nav.carta')}</a>
+  <a href={`/${lang}/pizzerias`}>{t('header.nav.pizzerias')}</a>
+  <a href={`/${lang}/talento`}>{t('header.nav.talento')}</a>
+</nav>
+```
+
+### Form with Translations
+
+```astro
+---
+import { getLangFromUrl, useTranslations } from '@/i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<form>
+  <input 
+    type="email" 
+    placeholder={t('form.input.placeholder')} 
+  />
+  <button type="submit">
+    {t('form.button.submit')}
+  </button>
+</form>
+```

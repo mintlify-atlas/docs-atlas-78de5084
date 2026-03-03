@@ -1,0 +1,539 @@
+---
+title: Animations
+description: GSAP and Lenis implementation patterns for smooth, performant animations
+---
+
+## Animation Stack
+
+Del Poble uses a powerful animation stack for smooth, engaging interactions:
+
+- **GSAP 3.14.2** - Core animation library with ScrollTrigger and Draggable
+- **Lenis 1.3.17** - Smooth scrolling (desktop only)
+- **Astro View Transitions** - Page transition animations
+
+## Smooth Scrolling with Lenis
+
+### Implementation
+
+Lenis is initialized globally in the Layout component and synced with GSAP's ScrollTrigger.
+
+**Location:** `src/layouts/Layout.astro:60-135`
+
+```javascript
+import Lenis from 'lenis';
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
+
+let lenis;
+
+function initLenis() {
+  const isMobile = window.innerWidth <= 768;
+  
+  if (!isMobile) {
+    lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    
+    // Sync Lenis with ScrollTrigger
+    lenis.on('scroll', ScrollTrigger.update);
+    
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+    
+    gsap.ticker.lagSmoothing(0);
+    ScrollTrigger.refresh();
+  }
+}
+```
+
+### Lifecycle Management
+
+**Cleanup on Navigation:**
+
+```javascript
+document.addEventListener('astro:after-swap', () => {
+  destroyLenis();
+  ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+});
+
+document.addEventListener('astro:page-load', () => {
+  // Wait for view transition to complete (800ms)
+  setTimeout(() => {
+    initLenis();
+  }, 900);
+});
+```
+
+<Note>
+Lenis is **disabled on mobile** (≤768px) for better native scroll performance and battery life.
+</Note>
+
+## GSAP Patterns
+
+### ScrollTrigger Basics
+
+Most scroll-triggered animations follow this pattern:
+
+```javascript
+document.addEventListener('astro:page-load', () => {
+  // Desktop-only animation
+  if (window.innerWidth <= 1000) return;
+  
+  gsap.to(element, {
+    rotation: -13.314,
+    x: 4,
+    y: 35,
+    duration: 0.6,
+    ease: 'expo.out',
+    scrollTrigger: {
+      trigger: '.section-two',
+      start: 'top 60%',
+      once: true,  // Play once, don't reverse
+    }
+  });
+});
+```
+
+**Key Points:**
+
+- Animations initialize on `astro:page-load` event
+- Check viewport width before desktop-only animations
+- Use `once: true` for one-time entrance animations
+- Common easing: `expo.out`, `power3.out`, `elastic.out`
+
+### Common Easing Functions
+
+<CodeGroup>
+```javascript Expo Out
+// Sharp deceleration, smooth finish
+ease: 'expo.out'
+// Used in: Header, SectionTwo, SectionFive
+```
+
+```javascript Power3
+// Smoother, more gradual curve
+ease: 'power3.out'  // or 'power3.in'
+// Used in: Mobile menu overlay
+```
+
+```javascript Elastic Out
+// Bouncy, playful snap-back
+ease: 'elastic.out(1, 0.4)'
+// Used in: Draggable polaroids
+```
+
+```javascript None
+// Linear, no easing
+ease: 'none'
+// Used in: Scrubbed scroll animations
+```
+</CodeGroup>
+
+## Real-World Examples
+
+### Header Animation
+
+**Smooth slide-out before page transition:**
+
+**Location:** `src/components/Header.astro:115-135`
+
+```javascript
+document.addEventListener('astro:before-preparation', (ev) => {
+  const header = document.querySelector('.header');
+  const originalLoader = ev.loader;
+  
+  ev.loader = async () => {
+    // Slide header up and out of view
+    await gsap.to(header, {
+      yPercent: -102,  // Slightly more than 100% to hide border
+      duration: 0.4,
+      ease: "expo.inOut"
+    });
+    
+    // Apply new state while invisible
+    applyHeaderState(ev.to.pathname);
+    
+    // Allow Astro to swap content
+    await originalLoader();
+  };
+});
+
+// Slide back in after page load
+document.addEventListener('astro:page-load', () => {
+  gsap.to(header, {
+    yPercent: 0,
+    duration: 0.6,
+    delay: 0.2,
+    ease: "expo.out"
+  });
+});
+```
+
+**Dynamic color change on scroll:**
+
+**Location:** `src/components/Header.astro:207-223`
+
+```javascript
+ScrollTrigger.create({
+  trigger: headSection,
+  start: "bottom 70px",
+  onEnter: () => {
+    header.classList.add('menu-scroll');
+    // Animate background height using CSS variable
+    gsap.to(header, { '--bg-height': '100%', duration: 0.3 });
+    // Change text color
+    gsap.to(header.querySelectorAll('.nav-menu a, .lang-selector a'), {
+      color: "rgba(42, 75, 62, 1)",
+      duration: 0.3
+    });
+  },
+  onLeaveBack: () => {
+    header.classList.remove('menu-scroll');
+    gsap.to(header, { '--bg-height': '0%', duration: 0.3 });
+    gsap.to(header.querySelectorAll('.nav-menu a, .lang-selector a'), {
+      color: "rgba(239, 228, 203, 1)",
+      duration: 0.3
+    });
+  }
+});
+```
+
+### SectionTwo: Photo Spread Animation
+
+**Images spread apart on scroll reveal:**
+
+**Location:** `src/components/SectionTwo.astro:189-225`
+
+```javascript
+const scrollConfig = {
+  trigger: '.section-two',
+  start: 'top 60%',
+  once: true,
+};
+
+// Left image: rotate and slide left
+gsap.to(imgLeft, {
+  rotation: -13.314,
+  x: 4,
+  y: 35,
+  left: '0%',          // From 93% to 0%
+  duration: 0.6,
+  ease: 'expo.out',
+  scrollTrigger: scrollConfig,
+});
+
+// Center image: straighten from tilted
+gsap.to(imgCenter, {
+  rotation: 0,         // From -5.138deg to 0
+  duration: 1,
+  ease: 'expo.out',
+  scrollTrigger: scrollConfig,
+});
+
+// Right image: rotate and slide right
+gsap.to(imgRight, {
+  rotation: 13.91,
+  x: -8,
+  y: 40,
+  right: '0%',         // From 103% to 0%
+  duration: 0.6,
+  ease: 'expo.out',
+  scrollTrigger: scrollConfig,
+});
+```
+
+### SectionFive: Draggable Polaroids
+
+**Polaroid images with elastic snap-back:**
+
+**Location:** `src/components/SectionFive.astro:187-212`
+
+```javascript
+import { Draggable } from 'gsap/Draggable';
+
+gsap.registerPlugin(Draggable);
+
+const maxDist = 400;  // Maximum drag distance
+
+function makeDraggable(el) {
+  function snapBack() {
+    gsap.to(el, {
+      x: 0,
+      y: 0,
+      duration: 1.6,
+      ease: 'elastic.out(1, 0.4)',  // Bouncy return
+    });
+  }
+  
+  Draggable.create(el, {
+    type: 'x,y',
+    cursor: 'grab',
+    activeCursor: 'grabbing',
+    onDrag() {
+      // Limit drag distance
+      const dist = Math.sqrt(this.x * this.x + this.y * this.y);
+      if (dist >= maxDist) {
+        this.endDrag();
+        snapBack();
+      }
+    },
+    onRelease() {
+      snapBack();
+    },
+  });
+}
+
+// Animate into position, then enable dragging
+gsap.fromTo(img1,
+  { rotation: 0, xPercent: 16, yPercent: -48 },
+  {
+    rotation: -19.13,
+    xPercent: -70,
+    yPercent: 24,
+    duration: 0.6,
+    ease: 'expo.out',
+    scrollTrigger: { trigger: '.section-five', start: 'top 50%', once: true },
+    onComplete: () => makeDraggable(img1)
+  }
+);
+```
+
+### SectionFive: 3D Door Animation
+
+**Columns rotate like closing doors on scroll exit:**
+
+**Location:** `src/components/SectionFive.astro:151-175`
+
+```javascript
+if (window.innerWidth > 1000) {
+  const colLeft  = document.querySelector('.section-five__column--left');
+  const colRight = document.querySelector('.section-five__column--right');
+  const wrapper  = document.querySelector('.section-five-clip-wrapper');
+  
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: wrapper,
+      start: 'bottom 80%',
+      end: 'bottom top',
+      scrub: true,  // Tied directly to scroll position
+    },
+  });
+  
+  // Left door rotates -90deg from bottom-left pivot
+  tl.fromTo(colLeft,
+    { rotateZ: 0, transformOrigin: 'left bottom' },
+    { rotateZ: -90, ease: 'none' },
+    0
+  )
+  // Right door rotates +90deg from bottom-right pivot
+  .fromTo(colRight,
+    { rotateZ: 0, transformOrigin: 'right bottom' },
+    { rotateZ: 90, ease: 'none' },
+    0  // Same timeline position (parallel)
+  );
+}
+```
+
+### Marquee: Infinite Loop
+
+**Seamless horizontal looping text:**
+
+**Location:** `src/components/Marquee.astro:32-117`
+
+```javascript
+const boxes = gsap.utils.toArray(".box");
+
+const loop = horizontalLoop(boxes, {
+  paused: false,
+  repeat: -1,  // Infinite
+});
+
+function horizontalLoop(items, config) {
+  let tl = gsap.timeline({
+    repeat: config.repeat,
+    paused: config.paused,
+    defaults: { ease: "none" },
+    onReverseComplete: () => tl.totalTime(tl.rawTime() + tl.duration() * 100)
+  });
+  
+  let pixelsPerSecond = (config.speed || 1) * 100;
+  
+  // Convert to xPercent for responsiveness
+  gsap.set(items, {
+    xPercent: (i, el) => {
+      let w = parseFloat(gsap.getProperty(el, "width", "px"));
+      return parseFloat(gsap.getProperty(el, "x", "px")) / w * 100;
+    }
+  });
+  
+  // Create seamless loop by animating each item
+  for (let i = 0; i < items.length; i++) {
+    let item = items[i];
+    let distanceToLoop = /* calculated */;
+    
+    tl.to(item, {
+      xPercent: /* calculated */,
+      duration: distanceToLoop / pixelsPerSecond
+    }, 0)
+    .fromTo(item, {
+      xPercent: /* wrap position */
+    }, {
+      xPercent: /* final position */,
+      duration: /* calculated */,
+      immediateRender: false
+    }, distanceToLoop / pixelsPerSecond);
+  }
+  
+  return tl;
+}
+```
+
+## Best Practices
+
+<Tabs>
+  <Tab title="Lifecycle">
+    ### Cleanup & Initialization
+    
+    ```javascript
+    document.addEventListener('astro:page-load', () => {
+      // 1. Kill existing triggers
+      ScrollTrigger.getAll().forEach(t => t.kill());
+      
+      // 2. Initialize new animations
+      initAnimations();
+    });
+    
+    document.addEventListener('astro:after-swap', () => {
+      // Clean up before DOM swap
+      ScrollTrigger.getAll().forEach(t => t.kill());
+    });
+    ```
+  </Tab>
+  
+  <Tab title="Performance">
+    ### Optimization Tips
+    
+    1. **Desktop-only animations:**
+       ```javascript
+       if (window.innerWidth <= 1000) return;
+       ```
+    
+    2. **Use `once: true` for entrance animations:**
+       ```javascript
+       scrollTrigger: { once: true }
+       ```
+    
+    3. **Prefer transforms over position:**
+       ```javascript
+       // Good (GPU-accelerated)
+       gsap.to(el, { x: 100, rotation: 45 });
+       
+       // Avoid (triggers layout)
+       gsap.to(el, { left: '100px', top: '50px' });
+       ```
+    
+    4. **Kill tweens before reanimating:**
+       ```javascript
+       gsap.killTweensOf(element);
+       gsap.to(element, { /* new animation */ });
+       ```
+  </Tab>
+  
+  <Tab title="Responsive">
+    ### Mobile Considerations
+    
+    ```javascript
+    // Disable Lenis on mobile
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) {
+      lenis = new Lenis({ /* ... */ });
+    }
+    
+    // Disable complex animations
+    if (window.innerWidth > 1000) {
+      // Desktop-only draggable, 3D transforms, etc.
+    }
+    
+    // Alternative: Mobile-specific animations
+    if (window.innerWidth <= 600) {
+      gsap.to(element, {
+        y: 20,  // Simpler animation
+        duration: 0.3
+      });
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Debugging">
+    ### Development Tools
+    
+    ```javascript
+    // Enable ScrollTrigger markers
+    ScrollTrigger.create({
+      trigger: '.section',
+      start: 'top center',
+      markers: true  // Show start/end lines
+    });
+    
+    // Log timeline progress
+    const tl = gsap.timeline({
+      onUpdate: () => console.log('Progress:', tl.progress())
+    });
+    
+    // Global ScrollTrigger refresh (after DOM changes)
+    ScrollTrigger.refresh();
+    ```
+  </Tab>
+</Tabs>
+
+## Common Issues
+
+### Flickering on Page Transition
+
+**Problem:** Elements flash during View Transitions
+
+**Solution:** Use `transition:persist` and manual state management
+
+```astro
+<header transition:persist transition:name="header-principal">
+```
+
+See Header implementation (`src/components/Header.astro:40`) for complete pattern.
+
+### ScrollTrigger Not Firing
+
+**Problem:** ScrollTrigger doesn't work after navigation
+
+**Solution:** Ensure Lenis initialization happens after View Transition completes
+
+```javascript
+document.addEventListener('astro:page-load', () => {
+  setTimeout(() => {
+    initLenis();
+    ScrollTrigger.refresh();
+  }, 900);  // After 800ms view transition + buffer
+});
+```
+
+### Duplicate Animations
+
+**Problem:** Animations run multiple times
+
+**Solution:** Kill existing instances before creating new ones
+
+```javascript
+ScrollTrigger.getAll().forEach(t => t.kill());
+gsap.killTweensOf(element);
+```
+
+## Resources
+
+- [GSAP Documentation](https://greensock.com/docs/)
+- [ScrollTrigger Demos](https://greensock.com/st-demos/)
+- [Lenis GitHub](https://github.com/studio-freight/lenis)
+- [Astro View Transitions](https://docs.astro.build/en/guides/view-transitions/)

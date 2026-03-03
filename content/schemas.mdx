@@ -1,0 +1,355 @@
+---
+title: Content Schemas
+description: Documentation of Sanity schema definitions and field structures
+---
+
+## Overview
+
+Del Poble Pizzeria uses Sanity schemas to define the structure of all content. Schemas are located in `delpoble-studio/schemas/` and define the fields, validation, and organization of content.
+
+## Schema Files
+
+The main schema files include:
+
+- `frontPage.ts` - Homepage content structure
+- `cartaPage.ts` - Menu page with sections and categories
+- `dish.ts` - Individual dish/product definition
+- `historiaPage.ts` - History page content
+- `pizzeriasPage.ts` - Locations page
+- `contactPage.ts` - Contact page
+- `trabajaConNosotrosPage.ts` - Careers page
+- `generalPage.ts` - Dynamic general pages
+- `footer.ts` - Footer configuration
+- `siteSettings.ts` - Global site settings
+- `localized.ts` - Localization helpers
+
+## Front Page Schema
+
+The homepage schema (`frontPage.ts`) organizes content into sections:
+
+### Key Fields
+
+<ParamField path="backgroundImages" type="object" required>
+  Hero section background images
+  
+  <Expandable title="properties">
+    <ParamField path="desktop" type="image" required>
+      Desktop background image with hotspot and alt text
+    </ParamField>
+    
+    <ParamField path="mobile" type="image">
+      Mobile-optimized background image
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="orderLink" type="url" required>
+  Link to the online ordering system
+</ParamField>
+
+<ParamField path="marqueeText" type="localizedString" required>
+  Animated marquee text below the hero (Spanish, English, Valencian)
+</ParamField>
+
+<ParamField path="images" type="object" required>
+  Three-image grid in section two
+  
+  <Expandable title="properties">
+    <ParamField path="image1" type="image" required>
+      First image with alt text
+    </ParamField>
+    <ParamField path="image2" type="image" required>
+      Second image with alt text
+    </ParamField>
+    <ParamField path="image3" type="image" required>
+      Third image with alt text
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="floatingTextLeft" type="localizedString">
+  Left floating text overlay
+</ParamField>
+
+<ParamField path="floatingTextRight" type="localizedString">
+  Right floating text overlay
+</ParamField>
+
+<ParamField path="highlightedText" type="localizedResponsiveArray">
+  Responsive highlighted text with different content for desktop, tablet, and mobile
+</ParamField>
+
+<ParamField path="bodyText" type="localizedText">
+  Main body text content (6 rows)
+</ParamField>
+
+### Section Groups
+
+The front page schema uses groups to organize fields:
+
+```typescript
+groups: [
+  { name: 'head', title: 'Head' },
+  { name: 'sectionTwo', title: 'Section Two' },
+  { name: 'sectionThree', title: 'Section Three' },
+  { name: 'sectionFour', title: 'Section Four' },
+  { name: 'sectionFive', title: 'Section Five' },
+  { name: 'sectionClubDelPoble', title: 'Section Club Del Poble' },
+]
+```
+
+## Carta Page Schema
+
+The menu page (`cartaPage.ts`) uses nested arrays to organize dishes:
+
+### Structure
+
+<ParamField path="sections" type="array" required>
+  Array of menu sections (e.g., Pizzas, Entrantes, Bebidas)
+  
+  <Expandable title="section fields">
+    <ParamField path="title" type="localizedString" required>
+      Section title (e.g., "PIZZES")
+    </ParamField>
+    
+    <ParamField path="imageTitle" type="localizedString">
+      Text displayed with the featured image
+    </ParamField>
+    
+    <ParamField path="featuredImage" type="image">
+      Main image for the section with alt text and hotspot
+    </ParamField>
+    
+    <ParamField path="order" type="number" required>
+      Display order (integer, min: 0)
+    </ParamField>
+    
+    <ParamField path="categories" type="array">
+      Subcategories within the section
+      
+      <Expandable title="category fields">
+        <ParamField path="availability" type="array">
+          Where this category is available:
+          - `delivery` - Available for delivery
+          - `pizzeria` - Available at pizzeria locations
+          - `restaurante` - Available at restaurant locations
+          - `consultar` - Check at location
+        </ParamField>
+        
+        <ParamField path="name" type="localizedString">
+          Category name (e.g., "Clàssic", "Gourmet")
+        </ParamField>
+        
+        <ParamField path="specialBadge" type="image">
+          Special badge/icon displayed after category name
+        </ParamField>
+        
+        <ParamField path="order" type="number" required>
+          Display order within section
+        </ParamField>
+        
+        <ParamField path="dishes" type="array">
+          References to dish documents
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Example Structure
+
+```typescript
+// Example: Carta Page structure
+{
+  sections: [
+    {
+      title: { es: "PIZZES", en: "PIZZAS", val: "PIZZES" },
+      imageTitle: { es: "Nuestras pizzas", ... },
+      featuredImage: {...},
+      order: 1,
+      categories: [
+        {
+          availability: ["delivery", "pizzeria"],
+          name: { es: "Clàssic", en: "Classic", val: "Clàssic" },
+          order: 1,
+          dishes: [/* references to dish documents */]
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Dish Schema
+
+Individual dishes (`dish.ts`) are referenced by the Carta Page:
+
+<ParamField path="name" type="localizedString" required>
+  Dish name in all supported languages
+</ParamField>
+
+<ParamField path="description" type="localizedText">
+  Ingredients or description (10 rows per language)
+</ParamField>
+
+<ParamField path="badgeFront" type="image">
+  Front badge image (e.g., FAVORITA, VEGANA, NOVEDAD)
+</ParamField>
+
+<ParamField path="badgeBack" type="image">
+  Back badge image
+</ParamField>
+
+<ParamField path="order" type="number">
+  Display order within category (integer, min: 0)
+</ParamField>
+
+<ParamField path="allergens" type="array">
+  Array of allergen identifiers (currently hidden):
+  - `gluten`, `crustaceos`, `huevos`, `pescado`
+  - `cacahuetes`, `soja`, `lacteos`, `frutos_cascara`
+  - `apio`, `mostaza`, `sesamo`, `sulfitos`
+  - `altramuces`, `moluscos`
+</ParamField>
+
+### Preview Configuration
+
+```typescript
+preview: {
+  select: {
+    title: 'name.es',
+    subtitle: 'description.es',
+  },
+  prepare({ title, subtitle }) {
+    return {
+      title: title || 'Sin nombre',
+      subtitle: subtitle || '',
+    }
+  },
+}
+```
+
+## Localized Field Helpers
+
+The `localized.ts` file provides helper functions for creating multilingual fields:
+
+### localizedString
+
+Creates a string field with translations:
+
+```typescript
+localizedString('fieldName', 'Field Title', 'Optional description')
+```
+
+Generates:
+- `es` (Español) - Required
+- `en` (English) - Optional
+- `val` (Valencià) - Optional
+
+### localizedText
+
+Creates a textarea field with translations:
+
+```typescript
+localizedText('description', 'Description', 10) // 10 rows
+```
+
+### localizedArray
+
+Creates an array field with localized content:
+
+```typescript
+localizedArray('items', 'Items', {
+  type: 'object',
+  fields: [...]
+})
+```
+
+### localizedResponsiveText
+
+Creates responsive text with device-specific translations:
+
+```typescript
+localizedResponsiveText('highlightedText', 'Highlighted Text', 4)
+```
+
+Generates fields for:
+- Desktop (required)
+- Tablet (optional, ≤1000px)
+- Mobile (optional, ≤600px)
+
+Each with full language support (es, en, val).
+
+### localizedResponsiveArray
+
+Same as responsive text, but for arrays of objects.
+
+## Field Validation
+
+Schemas include validation rules:
+
+```typescript
+defineField({
+  name: 'order',
+  type: 'number',
+  validation: (Rule) => Rule.required().integer().min(0),
+})
+```
+
+Common patterns:
+- `.required()` - Field must have a value
+- `.integer()` - Must be a whole number
+- `.min(0)` - Minimum value
+- `.max()` - Maximum value
+- Custom validators for complex logic
+
+## Image Fields
+
+All image fields support:
+
+```typescript
+{
+  type: 'image',
+  options: {
+    hotspot: true, // Enable focal point selection
+  },
+  fields: [
+    {
+      name: 'alt',
+      type: 'string',
+      title: 'Texto alternativo',
+    },
+  ],
+}
+```
+
+## Icons
+
+Schemas use React Icons for visual identification:
+
+```typescript
+import { MdHome } from 'react-icons/md'
+
+export default defineType({
+  name: 'frontPage',
+  icon: MdHome,
+  // ...
+})
+```
+
+Available icons:
+- `MdHome` - Front Page
+- `MdRestaurantMenu` - Carta Page
+- `MdRestaurant` - Dish
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Localized Content" icon="language" href="/content/localized-content">
+    Learn how to manage translations in the Studio
+  </Card>
+  
+  <Card title="GROQ Queries" icon="code" href="/content/queries">
+    Fetch schema data with GROQ queries
+  </Card>
+</CardGroup>

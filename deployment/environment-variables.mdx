@@ -1,0 +1,111 @@
+---
+title: Environment Variables
+description: Configure environment variables for Del Poble Pizzeria
+---
+
+Del Poble Pizzeria uses environment variables to configure SMTP email functionality for the newsletter subscription feature.
+
+## Setup
+
+Create a `.env` file in the root of your project based on the `.env.example` file:
+
+```bash
+cp .env.example .env
+```
+
+<Warning>
+  Never commit your `.env` file to version control. It contains sensitive credentials.
+</Warning>
+
+## Required Variables
+
+### SMTP_HOST
+
+The hostname of your SMTP server.
+
+```bash
+SMTP_HOST=smtp.tuhosting.com
+```
+
+**Example values:**
+- Gmail: `smtp.gmail.com`
+- Outlook: `smtp.office365.com`
+- Custom hosting: Provided by your hosting provider
+
+### SMTP_PORT
+
+The port number for your SMTP server.
+
+```bash
+SMTP_PORT=465
+```
+
+**Common ports:**
+- `465` - SSL/TLS (recommended for secure connections)
+- `587` - STARTTLS (alternative secure option)
+- `25` - Unencrypted (not recommended)
+
+### SMTP_USER
+
+The username for SMTP authentication, typically your full email address.
+
+```bash
+SMTP_USER=noreply@tudominio.com
+```
+
+<Warning>
+  Use a dedicated email account for sending automated emails, not your personal account.
+</Warning>
+
+### SMTP_PASS
+
+The password for your SMTP account.
+
+```bash
+SMTP_PASS=tu_contraseña_smtp
+```
+
+**Important notes:**
+- For Gmail, use an [App Password](https://support.google.com/accounts/answer/185833) instead of your regular password
+- Store this securely and never share it publicly
+- Use strong, unique passwords
+
+### EMAIL_TO
+
+The recipient email address where newsletter subscription notifications will be sent.
+
+```bash
+EMAIL_TO=admin@tudominio.com
+```
+
+This is typically the administrator or marketing team email where you want to receive notifications when users subscribe to the newsletter.
+
+## Production Configuration
+
+When deploying to Vercel or other platforms, add these environment variables through the platform's dashboard:
+
+1. Go to your project settings
+2. Navigate to Environment Variables
+3. Add each variable with its production value
+4. Ensure they're available for the production environment
+
+<Warning>
+  Always use different SMTP credentials for development and production environments.
+</Warning>
+
+## Validation
+
+The application uses these variables in the email sending functionality. If any variable is missing or incorrect, the newsletter subscription feature will fail.
+
+Test your configuration by:
+1. Starting the development server
+2. Submitting a test newsletter subscription
+3. Checking that the email is received at the `EMAIL_TO` address
+
+## Security Best Practices
+
+- Never hardcode credentials in your source code
+- Use different credentials for development and production
+- Rotate passwords regularly
+- Limit SMTP account permissions to sending only
+- Monitor email sending logs for suspicious activity

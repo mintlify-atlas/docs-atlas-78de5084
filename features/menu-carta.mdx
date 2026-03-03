@@ -1,0 +1,466 @@
+---
+title: Menu (Carta)
+description: Complete guide to the menu structure, categories, dishes, allergens, and badges
+---
+
+The Carta page displays the pizzeria's menu in a hierarchical structure with visual badges, availability indicators, and animated elements.
+
+## Page Overview
+
+**File:** `src/pages/carta.astro`
+**Data Source:** `getCartaPageQuery(lang)` from Sanity CMS
+**View Transition:** `main-carta`
+
+## Menu Hierarchy
+
+The menu follows a three-level structure:
+
+```
+Sections (e.g., "Pizzas", "Ensaladas", "Postres")
+  └─ Categories (e.g., "Pizzas Clásicas", "Pizzas Especiales")
+      └─ Dishes (individual menu items)
+```
+
+### Data Structure Example
+
+```javascript
+{
+  sections: [
+    {
+      title: "Nuestras Pizzas",
+      featuredImage: "https://cdn.sanity.io/...",
+      featuredImageAlt: "Pizzas Del Poble",
+      imageTitle: "Artesanales y auténticas",
+      categories: [
+        {
+          name: "Pizzas Clásicas",
+          specialBadge: {
+            url: "https://...",
+            alt: "Bestseller"
+          },
+          availability: ["delivery", "pizzeria", "restaurante"],
+          dishes: [
+            {
+              name: "Margarita",
+              description: "Tomate, mozzarella, albahaca fresca",
+              badgeFront: { url: "...", alt: "Vegetariana" },
+              badgeBack: { url: "...", alt: "Sin gluten" }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Sections
+
+### Section Header
+
+**File:** `src/pages/carta.astro:38-41`
+
+```astro
+<h2 class="section-title">
+  {section.title}
+</h2>
+```
+
+Displays the main section title (e.g., "Pizzas", "Bebidas").
+
+### Featured Image
+
+**File:** `src/pages/carta.astro:43-54`
+
+Optional large image that appears at the top of a section:
+
+```astro
+{section.featuredImage && (
+  <div class="section-featured-image">
+    <img
+      src={section.featuredImage}
+      alt={section.featuredImageAlt || section.title}
+      loading="lazy"
+    />
+    {section.imageTitle && (
+      <h3 class="image-title">{section.imageTitle}</h3>
+    )}
+  </div>
+)}
+```
+
+**Purpose:** Visually separate menu sections or highlight special offerings.
+
+---
+
+## Categories
+
+### Category Name and Special Badge
+
+**File:** `src/pages/carta.astro:58-72`
+
+```astro
+<h3 class="category-name">
+  <span>
+    {category.name}
+    {category.specialBadge?.url && (
+      <img
+        class="category-special-badge"
+        src={category.specialBadge.url}
+        alt={category.specialBadge.alt || 'Etiqueta Especial'}
+        loading="lazy"
+      />
+    )}
+  </span>
+</h3>
+```
+
+Categories can have an inline badge (e.g., "Nuevo", "Más vendido", "Chef's Special").
+
+### Availability Indicators
+
+**File:** `src/pages/carta.astro:74-101`
+
+Each category can specify where items are available:
+
+```astro
+<div class="category-availability">
+  <span class="text">{t('carta.available')}</span>
+  {category.availability.map((avail: string) => (
+    <span class={`availability-badge availability-${avail}`}>
+      {/* Icons and labels */}
+    </span>
+  ))}
+</div>
+```
+
+#### Availability Options
+
+<CardGroup cols={2}>
+  <Card title="Delivery" icon="truck">
+    Icon: `delivery.svg`
+    <br />Class: `availability-delivery`
+  </Card>
+  <Card title="Pizzeria" icon="store">
+    Icon: `pizzeria.svg`
+    <br />Class: `availability-pizzeria`
+  </Card>
+  <Card title="Restaurante" icon="utensils">
+    Icon: `restaurante.svg`
+    <br />Class: `availability-restaurante`
+  </Card>
+  <Card title="Consultar" icon="question">
+    Text only, no icon
+    <br />Class: `availability-consultar`
+  </Card>
+</CardGroup>
+
+**Rendering Example:**
+
+```astro
+{avail === 'delivery' && (
+  <>
+    <img src="/images/delivery.svg" alt="Delivery" />
+    <span>{t('carta.delivery')}</span>
+  </>
+)}
+```
+
+---
+
+## Dishes
+
+### Dish Structure
+
+**File:** `src/pages/carta.astro:103-140`
+
+Each dish consists of:
+- Optional dash prefix (if badges present)
+- Dish name
+- Front and/or back badges (allergens, dietary info)
+- Optional description
+
+```astro
+<div class="dish-item">
+  {(dish.badgeFront?.url || dish.badgeBack?.url) && <span class="dash">— </span>}
+  
+  <div class="dish-header">
+    <h4 class="dish-name">
+      <span class="span-name">{dish.name}</span>
+    </h4>
+    
+    {/* Badges */}
+  </div>
+  
+  {dish.description && (
+    <p class="dish-description">{dish.description}</p>
+  )}
+</div>
+```
+
+### Dish Badges
+
+Badges represent allergens, dietary restrictions, or special features:
+
+```astro
+<div class="dish-badges">
+  {dish.badgeFront?.url && (
+    <img
+      src={dish.badgeFront.url}
+      alt={dish.badgeFront.alt || 'Badge Delantera'}
+      class="dish-badge"
+    />
+  )}
+  {dish.badgeBack?.url && (
+    <img
+      src={dish.badgeBack.url}
+      alt={dish.badgeBack.alt || 'Badge Trasera'}
+      class="dish-badge"
+    />
+  )}
+</div>
+```
+
+**Common Badge Types:**
+- Vegetarian/Vegan
+- Gluten-free
+- Spicy
+- Contains nuts
+- Lactose-free
+- New item
+- Chef's recommendation
+
+---
+
+## Animations
+
+### Page Entry Animation
+
+**File:** `src/pages/carta.astro:214-230`
+
+The entire carta content slides up from bottom on page load:
+
+```javascript
+function animateCartaContent() {
+  const cartaContent = document.querySelector('.carta-content');
+  
+  if (cartaContent) {
+    gsap.set(cartaContent, { y: '100vh' });
+    
+    gsap.to(cartaContent, {
+      y: 0,
+      duration: 0.8,
+      ease: 'power2.inOut',
+      delay: 0.3
+    });
+  }
+}
+```
+
+### Badge Rotation on Scroll
+
+**File:** `src/pages/carta.astro:233-292`
+
+Dish badges animate when scrolled into view:
+
+<Steps>
+
+<Step title="Initial state">
+
+Both badges start at rotation: 0°
+
+```javascript
+gsap.set(images[0], { rotation: 0 });
+if (images[1]) {
+  gsap.set(images[1], { rotation: 0 });
+}
+```
+
+</Step>
+
+<Step title="Scroll into view (onEnter)">
+
+When dish enters viewport:
+
+```javascript
+// Front badge rotates to -6.074°
+gsap.to(images[0], {
+  rotation: -6.074,
+  duration: 0.6,
+  ease: 'back.out(1.7)'
+});
+
+// Back badge rotates to 2.957° with slight delay
+gsap.to(images[1], {
+  rotation: 2.957,
+  duration: 0.6,
+  ease: 'back.out(1.7)',
+  delay: 0.1
+});
+```
+
+</Step>
+
+<Step title="Scroll out of view (onLeaveBack)">
+
+When scrolling back up, badges return to 0°:
+
+```javascript
+gsap.to(images[0], {
+  rotation: 0,
+  duration: 0.6,
+  ease: 'back.out(1.7)'
+});
+```
+
+</Step>
+
+</Steps>
+
+**ScrollTrigger Configuration:**
+
+```javascript
+ScrollTrigger.create({
+  trigger: badgeContainer,
+  start: 'top 70%',    // Trigger when top reaches 70% of viewport
+  end: 'bottom 30%',   // End when bottom leaves 30% of viewport
+  onEnter: () => { /* rotate badges */ },
+  onLeaveBack: () => { /* reset badges */ }
+});
+```
+
+---
+
+## Styling and Layout
+
+### Responsive Grid
+
+Dishes are laid out in a flexible list:
+
+```scss
+.dishes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dish-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+```
+
+### Badge Positioning
+
+Badges appear inline with the dish name:
+
+```scss
+.dish-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dish-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.dish-badge {
+  width: 24px;
+  height: 24px;
+}
+```
+
+---
+
+## Sanity CMS Schema
+
+The Carta page expects the following Sanity schema structure:
+
+```typescript
+// cartaPage document
+{
+  _type: 'cartaPage',
+  sections: [
+    {
+      title: string,
+      featuredImage?: string,
+      featuredImageAlt?: string,
+      imageTitle?: string,
+      categories: [
+        {
+          name?: string,
+          specialBadge?: {
+            url: string,
+            alt?: string
+          },
+          availability?: string[], // ['delivery', 'pizzeria', 'restaurante', 'consultar']
+          dishes: [
+            {
+              name: string,
+              description?: string,
+              badgeFront?: {
+                url: string,
+                alt?: string
+              },
+              badgeBack?: {
+                url: string,
+                alt?: string
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Localization
+
+All text fields support multilingual content:
+
+```javascript
+export function getCartaPageQuery(lang: string = 'es') {
+  return `
+    *[_type == "cartaPage"][0] {
+      sections[]{
+        ${localizedField('title', lang)},
+        featuredImage,
+        ${localizedField('featuredImageAlt', lang)},
+        // ...
+      }
+    }
+  `;
+}
+```
+
+---
+
+## Loading Performance
+
+### Lazy Loading
+
+All images use `loading="lazy"` to defer offscreen images:
+
+```astro
+<img src={image.url} alt={image.alt} loading="lazy" />
+```
+
+### Animation Timing
+
+Badge animations initialize 1.1 seconds after page load to allow content animation to complete:
+
+```javascript
+document.addEventListener('astro:page-load', () => {
+  animateCartaContent();
+  
+  setTimeout(() => {
+    animateBadges();
+  }, 1100);
+});
+```

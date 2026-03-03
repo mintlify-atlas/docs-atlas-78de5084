@@ -1,0 +1,205 @@
+---
+title: Pages Overview
+description: Complete guide to all pages in the Del Poble Pizzeria website
+---
+
+The Del Poble website consists of six main pages, each with specific functionality and content sourced from Sanity CMS.
+
+## Available Routes
+
+All pages support multilingual content (Spanish, English, Valencian) through the i18n system.
+
+### Homepage (`/`)
+
+**File:** `src/pages/index.astro`
+
+The main landing page featuring:
+- Hero section with background images and order CTA
+- Marquee text animation
+- Multiple content sections (SectionTwo through SectionFive)
+- Club Del Poble subscription form
+- Preloader animation with brand colors (green #2A4B3E and yellow #FCB922)
+
+**Data Source:** `getFrontPageQuery()` from Sanity
+
+**Key Components:**
+- `Head` - Hero section with dynamic backgrounds
+- `Marquee` - Animated scrolling text
+- `SectionTwo` - Image gallery with floating text
+- `SectionThree` - Three-image layout with floating element
+- `SectionFour` - Highlighted content with image grid
+- `SectionFive` - Two-column layout with CTA
+- `SectionClubDelPoble` - Newsletter subscription
+
+---
+
+### Historia (`/historia`)
+
+**File:** `src/pages/historia.astro`
+
+The brand story and history page featuring:
+- Custom hero section with responsive highlighted text
+- Image gallery swiper with rotating animations
+- Horizontal scroll section with timeline items
+- Multi-device responsive layouts (desktop/tablet/mobile)
+
+**Data Source:** `getHistoriaPageQuery()` from Sanity
+
+**Key Features:**
+- Swiper carousel with 1.4/2.5/2 slides per view (mobile/tablet/desktop)
+- GSAP-powered image rotations (-12.34° desktop, ±6.83° tablet/mobile)
+- Dynamic slide info updates based on active slide
+- Horizontal scroll timeline with interactive items
+
+**View Transition:** `main-historia` with slide-up animation (0.8s cubic-bezier)
+
+---
+
+### Carta (`/carta`)
+
+**File:** `src/pages/carta.astro`
+
+The menu/carta page displaying pizzeria offerings:
+- Hierarchical menu structure (sections → categories → dishes)
+- Dish badges and allergen information
+- Availability indicators (delivery, pizzeria, restaurante)
+- Animated badge rotations on scroll
+
+**Data Source:** `getCartaPageQuery()` from Sanity
+
+**Structure:**
+```
+Sections
+  └─ Categories
+      ├─ Special badges
+      ├─ Availability tags
+      └─ Dishes
+          ├─ Name & description
+          └─ Front/back badges
+```
+
+**Animations:**
+- Content slides up on page load (100vh → 0)
+- Badge rotation on scroll trigger (front: -6.074°, back: 2.957°)
+- Smooth scroll-triggered animations with GSAP
+
+---
+
+### Contacto (`/contacto`)
+
+**File:** `src/pages/contacto.astro`
+
+Contact page with FAQ accordion and contact form:
+- Responsive highlighted text sections
+- FAQ accordion (all open on desktop, first open on mobile)
+- Contact form with validation
+- Multi-device image display
+
+**Data Source:** `getContactPageQuery()` from Sanity
+
+**Form Fields:**
+- `nombre` (text, required)
+- `email` (email, required)
+- `motivo` (select: informacion, reserva, eventos, franquicia, prensa, otro)
+- `mensaje` (textarea, required)
+- `privacidad` (checkbox, required)
+
+**Form Action:** `actions.submitContactForm` - Sends email via Nodemailer SMTP
+
+---
+
+### Pizzerias (`/pizzerias`)
+
+**File:** `src/pages/pizzerias.astro`
+
+Interactive map of all pizzeria locations:
+- Sticky map container (desktop only)
+- Clickable province markers with scroll-to functionality
+- Location cards with address, phone, and availability
+- Province-based filtering and grouping
+
+**Data Source:** `getPizzeriasPageQuery()` from Sanity
+
+**Features:**
+- Interactive SVG/image markers positioned via `mapPositionX`/`mapPositionY` percentages
+- Smooth GSAP scroll-to animation (1.2s, power3.inOut)
+- Location availability badges (delivery, terraza, pizzeria, restaurante)
+- Google Maps integration for directions
+- Phone links with `tel:` protocol
+
+**Map Functionality:**
+- Desktop: Map pins at 55px from top
+- Mobile/Tablet: Standard scroll behavior
+- Click marker → scroll to province section with offset
+
+---
+
+### Talento (`/talento`)
+
+**File:** `src/pages/talento.astro`
+
+Career opportunities and job application page:
+- Auto-rotating image gallery (Swiper with unique rotations per image)
+- Job search functionality
+- Job listings grouped by province
+- CV upload form with file attachments
+
+**Data Sources:**
+- `getTrabajaConNosotrosPageQuery()` - Page content
+- `getJobOffersQuery()` - Active job listings
+- `getProvincesQuery()` - Location options
+
+**Search:** Real-time filtering by title, description, province, or locality
+
+**Job Accordion:**
+- First job card open by default
+- Smooth GSAP expand/collapse (0.4s, power2.inOut)
+- Icon rotation (0° → 90°)
+
+---
+
+## Common Features
+
+### View Transitions
+
+All pages use Astro View Transitions with a consistent slide-up animation:
+
+```css
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+```
+
+**Animation:** 0.8s cubic-bezier(0.19, 1, 0.22, 1)
+**Z-index:** New page at 998, header at 1000
+
+### Responsive Breakpoints
+
+- **Mobile:** < 600px
+- **Tablet:** 600px - 1000px
+- **Desktop:** > 1000px
+
+Most components support device-specific content (desktop/tablet/mobile variants).
+
+### Layout Component
+
+All pages wrap content in `<Layout>` which provides:
+- Header with navigation
+- Footer with social links
+- View transition support
+- Global styles and scripts
+
+### Sanity CMS Integration
+
+Content is fetched server-side using the `@sanity/client`:
+
+```astro
+import { client } from '../lib/sanity';
+import { getPageQuery } from '../lib/sanityQueries';
+
+const lang = getLangFromUrl(Astro.url);
+const pageData = await client.fetch(getPageQuery(lang));
+```
+
+All queries support localized fields with automatic fallback (requested lang → es → empty string).

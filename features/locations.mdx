@@ -1,0 +1,497 @@
+---
+title: Locations (Pizzerias)
+description: Interactive map, province filtering, and location data structure for pizzeria locations
+---
+
+The Pizzerias page displays all Del Poble locations on an interactive map with clickable province markers and detailed location cards.
+
+## Page Overview
+
+**File:** `src/pages/pizzerias.astro`
+**Data Source:** `getPizzeriasPageQuery(lang)` from Sanity CMS
+**View Transition:** `main-pizzerias`
+
+## Layout Structure
+
+The page uses a two-column layout:
+
+```astro
+<div class="cols">
+  <div class="map-container">
+    {/* Sticky map with markers */}
+  </div>
+  
+  <div class="pizzerias-container">
+    {/* Scrollable location listings */}
+  </div>
+</div>
+```
+
+**Desktop behavior:** Map pins to viewport (sticky) while locations scroll
+**Mobile/Tablet:** Both sections scroll normally
+
+---
+
+## Interactive Map
+
+### Map Container
+
+**File:** `src/pages/pizzerias.astro:25-84`
+
+```astro
+<div class="map-container" style={`background-image: url(${mapBackground})`}>
+  <div class="map-content">
+    <img src="/images/sello.svg" class="bg">
+    <h2 class="highlighted-text">{highlightedText}</h2>
+    
+    <div class="map">
+      <img src="/images/03.dp_sello.svg" class="map-img">
+      {/* Province markers */}
+    </div>
+    
+    <p class="sub-text">{subText}</p>
+    
+    {/* Province list */}
+  </div>
+</div>
+```
+
+### Province Markers
+
+Markers are positioned absolutely using percentage coordinates:
+
+```astro
+{pizzeriasPageData.provinces.map((province) => {
+  const hasPosition = province.mapPositionX !== null && 
+                      province.mapPositionY !== null;
+  
+  return (
+    <div
+      class={`map-marker province-${province.slug}`}
+      data-province={province.name}
+      style={hasPosition ? 
+        `left: ${province.mapPositionX}%; top: ${province.mapPositionY}%;` : ''}
+    >
+      {/* Marker icon */}
+      <span class="marker-count">{province.locals?.length || 0}</span>
+    </div>
+  );
+})}
+```
+
+**Data attributes:**
+- `class`: `map-marker province-{slug}` for targeting
+- `data-province`: Province name for display
+- `style`: Inline positioning (left/top percentages)
+
+### Marker Icons
+
+Markers can use custom SVG icons or fallback to default triangle:
+
+```astro
+{province.mapIcon ? (
+  <img src={province.mapIcon} alt={province.mapIconAlt || province.name} class="marker-icon" />
+) : (
+  <svg width="28" height="25" viewBox="0 0 28 25" fill="none">
+    <path d="M16.9963 22.5C15.4567 25.1667 11.6077 25.1667 10.0681 22.5L0.541843 5.99999C-0.997759 3.33333 0.926746 -1.05166e-06 4.00595 -1.32085e-06L23.0585 -2.98648e-06C26.1377 -3.25567e-06 28.0622 3.33333 26.5226 6L16.9963 22.5Z" fill="#2A4B3E"/>
+  </svg>
+)}
+<span class="marker-count">{province.locals?.length || 0}</span>
+```
+
+**Marker count:** Displays number of locations in that province.
+
+---
+
+## Map Interactivity
+
+### Click-to-Scroll
+
+**File:** `src/pages/pizzerias.astro:193-236`
+
+Clicking a province marker scrolls to the corresponding section:
+
+<Steps>
+
+<Step title="Extract province slug from marker class">
+
+```javascript
+const classList = Array.from(marker.classList);
+const provinceClass = classList.find(cls => cls.startsWith('province-'));
+const slug = provinceClass.replace('province-', '');
+```
+
+</Step>
+
+<Step title="Find target section">
+
+```javascript
+const targetSection = document.getElementById(`province-${slug}`);
+```
+
+</Step>
+
+<Step title="Calculate scroll position with header offset">
+
+```javascript
+const targetPosition = targetSection.offsetTop - 90; // 70px header + 20px margin
+```
+
+</Step>
+
+<Step title="Animate scroll with GSAP">
+
+```javascript
+gsap.to(window, {
+  duration: 1.2,
+  scrollTo: {
+    y: targetPosition,
+    autoKill: false
+  },
+  ease: "power3.inOut"
+});
+```
+
+</Step>
+
+<Step title="Add marker pulse effect">
+
+```javascript
+gsap.fromTo(marker,
+  { scale: 1 },
+  {
+    scale: 1.3,
+    duration: 0.2,
+    yoyo: true,
+    repeat: 1,
+    ease: "power2.inOut"
+  }
+);
+```
+
+</Step>
+
+</Steps>
+
+### Sticky Map Behavior
+
+**File:** `src/pages/pizzerias.astro:173-192`
+
+On desktop (> 1000px), the map container pins to the viewport:
+
+```javascript
+function initMapSticky() {
+  const mapContainer = document.querySelector('.map-container');
+  const pizzeriasContainer = document.querySelector('.pizzerias-container');
+  
+  const mm = gsap.matchMedia();
+  
+  mm.add("(min-width: 1001px)", () => {
+    if (mapContainer && pizzeriasContainer) {
+      ScrollTrigger.create({
+        trigger: pizzeriasContainer,
+        start: 'top 55px',      // Start pinning when container reaches header
+        end: 'bottom bottom',   // Unpin when container ends
+        pin: mapContainer,
+        pinSpacing: false,
+        markers: false
+      });
+    }
+  });
+}
+```
+
+**Why 55px?** Accounts for the header height (typically 55-70px).
+
+---
+
+## Province List Sidebar
+
+**File:** `src/pages/pizzerias.astro:67-82`
+
+A compact list showing all provinces with location counts:
+
+```astro
+<div class="provinces">
+  <ul class="provinces-list">
+    {pizzeriasPageData.provinces
+      .filter((province) => province.locals && province.locals.length > 0)
+      .map((province) => (
+        <li class="province-item">
+          <sup>{province.locals.length}</sup>
+          {province.name}
+        </li>
+      ))
+    }
+  </ul>
+</div>
+```
+
+**Filtering:** Only provinces with at least one location are shown.
+
+---
+
+## Location Listings
+
+### Province Sections
+
+**File:** `src/pages/pizzerias.astro:88-159`
+
+Locations are grouped by province with a count:
+
+```astro
+{pizzeriasPageData.provinces
+  .filter((province) => province.locals && province.locals.length > 0)
+  .map((province) => (
+    <div class="province-section" id={`province-${province.slug}`}>
+      <h2 class="province-name">
+        {province.name} <sup>({province.locals.length})</sup>
+      </h2>
+      {/* Location cards */}
+    </div>
+  ))
+}
+```
+
+**ID attribute:** `province-${slug}` enables scroll-to functionality from map.
+
+### Location Cards
+
+**File:** `src/pages/pizzerias.astro:98-154`
+
+Each location displays:
+
+```astro
+<div class="local-card">
+  <div class="top">
+    <div class="left">
+      <h3 class="local-locality">
+        <img src="/images/pizza_icono.svg" class="icon">
+        {local.locality}
+      </h3>
+      
+      {local.address && (
+        <p class="local-address">{local.address}</p>
+      )}
+    </div>
+    
+    <div class="choices">
+      {/* Availability badges */}
+    </div>
+  </div>
+  
+  <div class="local-links">
+    {/* Directions and phone links */}
+  </div>
+</div>
+```
+
+### Availability Badges
+
+**File:** `src/pages/pizzerias.astro:115-128`
+
+Each location can have multiple service types:
+
+```astro
+<div class="local-availability">
+  {local.availability.map((avail: string) => (
+    <span class={`availability-tag availability-${avail}`}>
+      {avail === 'delivery' && <img src="/images/delivery.svg" alt="Delivery" />}
+      {avail === 'terraza' && <img src="/images/terraza.svg" alt="Terraza" />}
+      {avail === 'pizzeria' && <img src="/images/pizzeria.svg" alt="Pizzería" />}
+      {avail === 'restaurante' && <img src="/images/restaurante.svg" alt="Restaurante" />}
+    </span>
+  ))}
+</div>
+```
+
+<CardGroup cols={2}>
+  <Card title="Delivery" icon="truck">
+    Home delivery service available
+  </Card>
+  <Card title="Terraza" icon="umbrella">
+    Outdoor terrace seating
+  </Card>
+  <Card title="Pizzeria" icon="store">
+    Counter service / takeaway
+  </Card>
+  <Card title="Restaurante" icon="utensils">
+    Full table service dining
+  </Card>
+</CardGroup>
+
+### Action Links
+
+**File:** `src/pages/pizzerias.astro:131-152`
+
+#### Directions Link
+
+```astro
+{local.location && (
+  <a href={local.location}
+     target="_blank"
+     rel="noopener noreferrer"
+     class="local-map-link"
+  >
+    <img src="/images/06.dp_ubi.svg" class="location-icon">
+    {t('pizzerias.como-llegar')}
+    <img src="/images/pizza_icono.svg" class="icon">
+  </a>
+)}
+```
+
+**Expected format:** Google Maps URL (e.g., `https://maps.google.com/?q=...`)
+
+#### Phone Link
+
+```astro
+{local.phone && (
+  <a class="local-phone-link" href={`tel:${local.phone}`}>
+    <img src="/images/05.dp_tel.svg" class="tel-icon">
+    {local.phone}
+    <img src="/images/pizza_icono.svg" class="icon">
+  </a>
+)}
+```
+
+**Protocol:** `tel:` for direct calling on mobile devices.
+
+---
+
+## Data Structure
+
+### Province Object
+
+```typescript
+interface Province {
+  name: string;           // "Valencia"
+  slug: string;           // "valencia"
+  mapPositionX: number;   // 45.5 (percentage)
+  mapPositionY: number;   // 62.3 (percentage)
+  mapIcon?: string;       // URL to custom marker icon
+  mapIconAlt?: string;    // Alt text for icon
+  mapIconColor?: string;  // Color for marker (if applicable)
+  locals: Local[];        // Array of locations in this province
+}
+```
+
+### Local Object
+
+```typescript
+interface Local {
+  locality: string;       // "Centro Valencia"
+  address?: string;       // "Calle Mayor, 123"
+  location?: string;      // Google Maps URL
+  phone?: string;         // "+34 123 456 789"
+  availability: string[]; // ["delivery", "terraza", "pizzeria", "restaurante"]
+}
+```
+
+### Full Page Data
+
+```typescript
+interface PizzeriasPageData {
+  mapBackground?: string;    // Background image URL
+  highlightedText?: string;  // Hero text on map
+  subText?: string;          // Subtitle below map
+  provinces: Province[];     // All provinces with locations
+}
+```
+
+---
+
+## Responsive Behavior
+
+### Desktop (> 1000px)
+
+- Map container sticky-pinned to viewport
+- Two-column layout (map left, listings right)
+- Clickable markers scroll to province sections
+- Smooth GSAP animations
+
+### Tablet (600px - 1000px)
+
+- No sticky behavior
+- Map and listings stack vertically
+- Full-width layout
+- Touch-friendly click targets
+
+### Mobile (< 600px)
+
+- Simplified map view
+- Larger touch targets
+- Stacked location cards
+- Compressed spacing
+
+---
+
+## Sanity Query Structure
+
+**File:** `src/lib/sanityQueries.ts`
+
+```groq
+*[_type == "pizzeriasPage"][0] {
+  mapBackground,
+  highlightedText,
+  subText,
+  provinces[]->{
+    name,
+    "slug": slug.current,
+    mapPositionX,
+    mapPositionY,
+    mapIcon,
+    mapIconAlt,
+    locals[]{
+      locality,
+      address,
+      location,
+      phone,
+      availability[]
+    }
+  }
+}
+```
+
+**Key points:**
+- Provinces are referenced documents (`->`)
+- Locals are embedded within provinces
+- All text fields support localization
+- Map positions are stored as numbers (0-100)
+
+---
+
+## Performance Optimizations
+
+### Lazy Loading Images
+
+All location images and icons load lazily:
+
+```astro
+<img src={image} alt={alt} loading="lazy" />
+```
+
+### Event Delegation
+
+Marker click handlers use direct attachment for performance:
+
+```javascript
+markers.forEach((marker) => {
+  marker.addEventListener('click', handleMarkerClick);
+});
+```
+
+### ScrollTrigger Cleanup
+
+ScrollTriggers are automatically cleaned up on SPA navigation via `astro:page-load` event.
+
+### matchMedia
+
+Sticky behavior only activates on desktop:
+
+```javascript
+gsap.matchMedia().add("(min-width: 1001px)", () => {
+  // Desktop-only sticky logic
+});
+```
+
+Prevents unnecessary calculations on mobile.

@@ -1,0 +1,193 @@
+---
+title: 'Carta Page Query'
+description: 'Query function to fetch menu page with sections, categories, and dishes'
+---
+
+## getCartaPageQuery
+
+Retrieves the complete menu structure including sections, categories, and dishes with allergen information and special badges.
+
+### Function Signature
+
+```typescript
+getCartaPageQuery(lang: string = 'es'): string
+```
+
+### Parameters
+
+<ParamField path="lang" type="string" default="es">
+  Language code for localized content. Supports 'es', 'ca', 'en', etc. Falls back to Spanish if translation not available.
+</ParamField>
+
+### GROQ Query
+
+```groq
+*[_type == "cartaPage" && _id == "cartaPage"][0] {
+  "sections": sections[] | order(order asc) {
+    "title": coalesce(title.ca, title.es, ""),
+    "imageTitle": coalesce(imageTitle.ca, imageTitle.es, ""),
+    "featuredImage": featuredImage.asset->url,
+    "featuredImageAlt": featuredImage.alt,
+    order,
+    "categories": categories[] | order(order asc) {
+      availability,
+      "name": coalesce(name.ca, name.es, ""),
+      "specialBadge": {
+        "url": specialBadge.asset->url,
+        "alt": specialBadge.alt
+      },
+      order,
+      "dishes": dishes[]-> | order(order asc) {
+        _id,
+        "name": coalesce(name.ca, name.es, ""),
+        "description": coalesce(description.ca, description.es, ""),
+        "badgeFront": {
+          "url": badgeFront.asset->url,
+          "alt": badgeFront.alt
+        },
+        "badgeBack": {
+          "url": badgeBack.asset->url,
+          "alt": badgeBack.alt
+        },
+        order,
+        allergens
+      }
+    }
+  }
+}
+```
+
+### Response Structure
+
+<ResponseField name="sections" type="array">
+  Menu sections ordered by `order` field
+  <Expandable title="section properties">
+    <ResponseField name="title" type="string">
+      Localized section title (e.g., "Pizzas", "Bebidas")
+    </ResponseField>
+    <ResponseField name="imageTitle" type="string">
+      Localized decorative title for section image
+    </ResponseField>
+    <ResponseField name="featuredImage" type="string">
+      Resolved URL for section featured image
+    </ResponseField>
+    <ResponseField name="featuredImageAlt" type="string">
+      Alt text for featured image
+    </ResponseField>
+    <ResponseField name="order" type="number">
+      Sort order for section
+    </ResponseField>
+    <ResponseField name="categories" type="array">
+      Menu categories within this section
+      <Expandable title="category properties">
+        <ResponseField name="availability" type="string">
+          Category availability status
+        </ResponseField>
+        <ResponseField name="name" type="string">
+          Localized category name
+        </ResponseField>
+        <ResponseField name="specialBadge" type="object">
+          Special badge/icon for category
+          <Expandable title="badge properties">
+            <ResponseField name="url" type="string">
+              Resolved badge image URL
+            </ResponseField>
+            <ResponseField name="alt" type="string">
+              Badge alt text
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+        <ResponseField name="order" type="number">
+          Sort order for category
+        </ResponseField>
+        <ResponseField name="dishes" type="array">
+          Dishes in this category (referenced documents)
+          <Expandable title="dish properties">
+            <ResponseField name="_id" type="string">
+              Unique dish identifier
+            </ResponseField>
+            <ResponseField name="name" type="string">
+              Localized dish name
+            </ResponseField>
+            <ResponseField name="description" type="string">
+              Localized dish description
+            </ResponseField>
+            <ResponseField name="badgeFront" type="object">
+              Front-facing badge image (e.g., dietary icons)
+            </ResponseField>
+            <ResponseField name="badgeBack" type="object">
+              Back-facing badge image
+            </ResponseField>
+            <ResponseField name="order" type="number">
+              Sort order for dish
+            </ResponseField>
+            <ResponseField name="allergens" type="array">
+              Array of allergen codes/identifiers
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Usage Example
+
+```typescript
+import { sanityClient } from '@/lib/sanity';
+import { getCartaPageQuery } from '@/lib/sanityQueries';
+
+// In an Astro page component
+const lang = Astro.currentLocale || 'es';
+const cartaData = await sanityClient.fetch(getCartaPageQuery(lang));
+```
+
+```astro
+---
+// pages/carta.astro
+import { sanityClient } from '@/lib/sanity';
+import { getCartaPageQuery } from '@/lib/sanityQueries';
+
+const lang = Astro.currentLocale || 'es';
+const data = await sanityClient.fetch(getCartaPageQuery(lang));
+---
+
+<div class="menu">
+  {data.sections.map(section => (
+    <section>
+      <img src={section.featuredImage} alt={section.featuredImageAlt} />
+      <h2>{section.title}</h2>
+      
+      {section.categories.map(category => (
+        <div class="category">
+          <h3>{category.name}</h3>
+          {category.specialBadge?.url && (
+            <img src={category.specialBadge.url} alt={category.specialBadge.alt} />
+          )}
+          
+          <ul>
+            {category.dishes.map(dish => (
+              <li>
+                <h4>{dish.name}</h4>
+                <p>{dish.description}</p>
+                {dish.allergens.length > 0 && (
+                  <div class="allergens">
+                    Allergens: {dish.allergens.join(', ')}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
+  ))}
+</div>
+```
+
+### Notes
+
+- The query uses `dishes[]->` to dereference dish documents from category references
+- All sections, categories, and dishes are ordered by their `order` field using `| order(order asc)`
+- Allergen information is returned as an array for flexible display
+- Special badges can be used to highlight premium, vegetarian, or seasonal items

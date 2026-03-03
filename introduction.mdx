@@ -1,0 +1,135 @@
+---
+title: Welcome to Del Poble Pizzeria
+description: A modern multilingual pizzeria website built with Astro and Sanity CMS
+---
+
+# Welcome to Del Poble Pizzeria
+
+Del Poble Pizzeria is a modern, server-rendered website built with Astro and powered by Sanity CMS. This project showcases a beautiful pizzeria website with full internationalization support for Spanish, English, and Valencian.
+
+## What You'll Build
+
+This project is a production-ready pizzeria website featuring:
+
+- **🌍 Multi-language Support**: Full i18n with Spanish (default), English, and Valencian
+- **📝 Headless CMS**: Sanity Studio for content management with localized fields
+- **⚡ Blazing Fast**: Astro's server-side rendering for optimal performance
+- **✨ Smooth Animations**: GSAP and Lenis for professional animations
+- **📧 Contact Forms**: Server actions with Nodemailer integration
+- **🎨 Modern UI**: Swiper for carousels and custom SCSS styling
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get your development server running in 5 minutes
+  </Card>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Detailed setup guide for dependencies and environment
+  </Card>
+  <Card
+    title="Internationalization"
+    icon="globe"
+    href="/concepts/internationalization"
+  >
+    Learn how to manage multi-language content
+  </Card>
+  <Card
+    title="Sanity CMS"
+    icon="database"
+    href="/concepts/sanity-cms"
+  >
+    Configure and manage your content with Sanity Studio
+  </Card>
+</CardGroup>
+
+## Tech Stack
+
+Del Poble is built with modern web technologies:
+
+- **[Astro](https://astro.build)** - Fast, server-first web framework
+- **[Sanity](https://sanity.io)** - Headless CMS with real-time content
+- **[Vercel](https://vercel.com)** - Deployment platform with edge functions
+- **[GSAP](https://greensock.com/gsap/)** - Professional animation library
+- **[Lenis](https://lenis.studiofreight.com/)** - Smooth scroll experience
+- **[Swiper](https://swiperjs.com/)** - Modern touch slider
+
+## Project Structure
+
+```text
+delpoblepizzeria/
+├── src/
+│   ├── pages/              # Page routes
+│   │   ├── index.astro     # Spanish (default)
+│   │   ├── en/             # English pages
+│   │   └── val/            # Valencian pages
+│   ├── components/         # Reusable components
+│   ├── layouts/            # Layout templates
+│   ├── i18n/               # Translation utilities
+│   ├── lib/                # Sanity client & queries
+│   ├── actions/            # Server actions
+│   └── styles/             # SCSS styles
+├── delpoble-studio/        # Sanity Studio
+│   └── schemas/            # Content schemas
+├── public/                 # Static assets
+└── astro.config.mjs        # Astro configuration
+```
+
+## Key Features
+
+### Internationalization (i18n)
+
+The site supports three languages with intelligent fallbacks:
+
+- **Spanish (ES)** - Default language at `/`
+- **English (EN)** - Available at `/en/`
+- **Valencian (VAL)** - Available at `/val/`
+
+<Note>
+  Content is managed in Sanity with localized fields. Spanish is required as the fallback language, while English and Valencian are optional.
+</Note>
+
+### Server-Side Rendering
+
+Configured with Astro's server output mode for:
+- Dynamic content from Sanity
+- Server actions for form handling
+- SEO optimization
+- Fast page loads
+
+### Content Management
+
+Sanity Studio provides:
+- Real-time content editing
+- Localized fields for each language
+- Image optimization
+- Portable text for rich content
+
+## Next Steps
+
+<Steps>
+  <Step title="Get Started">
+    Follow the [Quickstart Guide](/quickstart) to clone and run the project
+  </Step>
+  <Step title="Configure Environment">
+    Set up your environment variables and Sanity connection
+  </Step>
+  <Step title="Explore Features">
+    Learn about i18n, Sanity schemas, and server actions
+  </Step>
+  <Step title="Deploy">
+    Deploy to Vercel with one click
+  </Step>
+</Steps>
+
+<Tip>
+  New to Astro? Check out the [Astro documentation](https://docs.astro.build) to learn the fundamentals.
+</Tip>

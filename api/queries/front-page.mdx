@@ -1,0 +1,250 @@
+---
+title: 'Front Page Query'
+description: 'Query function to fetch front page content with localized fields'
+---
+
+## getFrontPageQuery
+
+Retrieves all content for the homepage including hero images, marquee text, sections, and club signup content.
+
+### Function Signature
+
+```typescript
+getFrontPageQuery(lang: string = 'es'): string
+```
+
+### Parameters
+
+<ParamField path="lang" type="string" default="es">
+  Language code for localized content. Supports 'es', 'ca', 'en', etc. Falls back to Spanish if translation not available.
+</ParamField>
+
+### GROQ Query
+
+```groq
+*[_type == "frontPage" && _id == "frontPage"][0] {
+  backgroundImages {
+    desktop,
+    mobile
+  },
+  orderLink,
+  "marqueeText": coalesce(marqueeText.ca, marqueeText.es, ""),
+  images {
+    image1,
+    image2,
+    image3
+  },
+  "floatingTextLeft": coalesce(floatingTextLeft.ca, floatingTextLeft.es, ""),
+  "floatingTextRight": coalesce(floatingTextRight.ca, floatingTextRight.es, ""),
+  highlightedText {
+    "desktop": coalesce(desktop.ca, desktop.es, []),
+    "tablet": coalesce(tablet.ca, tablet.es, []),
+    "mobile": coalesce(mobile.ca, mobile.es, [])
+  },
+  "bodyText": coalesce(bodyText.ca, bodyText.es, ""),
+  sectionThreeImages {
+    image1,
+    image2,
+    image3
+  },
+  floatingImage,
+  sectionFourHighlightedText {
+    "desktop": coalesce(desktop.ca, desktop.es, ""),
+    "mobile": coalesce(mobile.ca, mobile.es, "")
+  },
+  sectionFourImage,
+  "sectionFourBodyText": coalesce(sectionFourBodyText.ca, sectionFourBodyText.es, ""),
+  sectionFourImages {
+    image1,
+    image2,
+    image3,
+    image4
+  },
+  sectionFiveColumn1 {
+    highlightedText {
+      "desktop": coalesce(desktop.ca, desktop.es, ""),
+      "tablet": coalesce(tablet.ca, tablet.es, ""),
+      "mobile": coalesce(mobile.ca, mobile.es, "")
+    },
+    "bodyText": coalesce(bodyText.ca, bodyText.es, ""),
+    "buttonText": coalesce(buttonText.ca, buttonText.es, ""),
+    buttonUrl
+  },
+  sectionFiveColumn2 {
+    backgroundImage,
+    image1,
+    image2,
+    image3
+  },
+  sectionClubHighlightedText {
+    "desktop": coalesce(desktop.ca, desktop.es, ""),
+    "tablet": coalesce(tablet.ca, tablet.es, ""),
+    "mobile": coalesce(mobile.ca, mobile.es, "")
+  },
+  "sectionClubBodyText": coalesce(sectionClubBodyText.ca, sectionClubBodyText.es, ""),
+  "sectionClubEmailPlaceholder": coalesce(sectionClubEmailPlaceholder.ca, sectionClubEmailPlaceholder.es, ""),
+  "sectionClubButtonText": coalesce(sectionClubButtonText.ca, sectionClubButtonText.es, "")
+}
+```
+
+### Response Structure
+
+<ResponseField name="backgroundImages" type="object">
+  Hero section background images
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop background image reference
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile background image reference
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="orderLink" type="string">
+  URL for online ordering
+</ResponseField>
+
+<ResponseField name="marqueeText" type="string">
+  Localized scrolling marquee text
+</ResponseField>
+
+<ResponseField name="images" type="object">
+  Section image references
+  <Expandable title="properties">
+    <ResponseField name="image1" type="string">
+      First image reference
+    </ResponseField>
+    <ResponseField name="image2" type="string">
+      Second image reference
+    </ResponseField>
+    <ResponseField name="image3" type="string">
+      Third image reference
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="floatingTextLeft" type="string">
+  Localized floating text for left side
+</ResponseField>
+
+<ResponseField name="floatingTextRight" type="string">
+  Localized floating text for right side
+</ResponseField>
+
+<ResponseField name="highlightedText" type="object">
+  Responsive highlighted text arrays
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="array">
+      Highlighted text array for desktop
+    </ResponseField>
+    <ResponseField name="tablet" type="array">
+      Highlighted text array for tablet
+    </ResponseField>
+    <ResponseField name="mobile" type="array">
+      Highlighted text array for mobile
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="bodyText" type="string">
+  Localized body text content
+</ResponseField>
+
+<ResponseField name="sectionThreeImages" type="object">
+  Section three image references
+</ResponseField>
+
+<ResponseField name="floatingImage" type="string">
+  Floating image reference
+</ResponseField>
+
+<ResponseField name="sectionFourHighlightedText" type="object">
+  Section four responsive highlighted text
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop highlighted text
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile highlighted text
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="sectionFourImage" type="string">
+  Section four main image reference
+</ResponseField>
+
+<ResponseField name="sectionFourBodyText" type="string">
+  Localized section four body text
+</ResponseField>
+
+<ResponseField name="sectionFourImages" type="object">
+  Section four gallery images (4 images)
+</ResponseField>
+
+<ResponseField name="sectionFiveColumn1" type="object">
+  Left column content for section five
+  <Expandable title="properties">
+    <ResponseField name="highlightedText" type="object">
+      Responsive highlighted text
+    </ResponseField>
+    <ResponseField name="bodyText" type="string">
+      Localized body text
+    </ResponseField>
+    <ResponseField name="buttonText" type="string">
+      Localized button text
+    </ResponseField>
+    <ResponseField name="buttonUrl" type="string">
+      Button URL
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="sectionFiveColumn2" type="object">
+  Right column images for section five
+</ResponseField>
+
+<ResponseField name="sectionClubHighlightedText" type="object">
+  Club section responsive highlighted text
+</ResponseField>
+
+<ResponseField name="sectionClubBodyText" type="string">
+  Localized club section body text
+</ResponseField>
+
+<ResponseField name="sectionClubEmailPlaceholder" type="string">
+  Localized email input placeholder
+</ResponseField>
+
+<ResponseField name="sectionClubButtonText" type="string">
+  Localized club signup button text
+</ResponseField>
+
+### Usage Example
+
+```typescript
+import { sanityClient } from '@/lib/sanity';
+import { getFrontPageQuery } from '@/lib/sanityQueries';
+
+// In an Astro page component
+const lang = Astro.currentLocale || 'es';
+const frontPageData = await sanityClient.fetch(getFrontPageQuery(lang));
+```
+
+```astro
+---
+// pages/index.astro
+import { sanityClient } from '@/lib/sanity';
+import { getFrontPageQuery } from '@/lib/sanityQueries';
+
+const lang = Astro.currentLocale || 'es';
+const data = await sanityClient.fetch(getFrontPageQuery(lang));
+---
+
+<section>
+  <h1>{data.marqueeText}</h1>
+  <p>{data.bodyText}</p>
+  <a href={data.orderLink}>Order Now</a>
+</section>
+```

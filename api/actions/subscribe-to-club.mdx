@@ -1,0 +1,182 @@
+---
+title: 'Subscribe to Club'
+api: 'POST /actions/subscribeToClub'
+description: 'Subscribe a user to the Club Del Poble mailing list'
+---
+
+## Overview
+
+This server action handles newsletter subscriptions for Club Del Poble. It accepts JSON data with an email address and optional language preference, then sends a notification email to the restaurant administrator.
+
+<Note>
+  This action accepts `json` format, unlike the other form actions which accept `form` data.
+</Note>
+
+## Input Parameters
+
+<ParamField path="email" type="string" required>
+  Subscriber's email address.
+  
+  **Validation:** Must be a valid email format
+  
+  **Error message:** "Email inválido"
+</ParamField>
+
+<ParamField path="lang" type="enum" optional>
+  Language preference for response messages. Defaults to `defaultLang` if not provided.
+  
+  **Accepted values:** `"es"`, `"en"`, `"val"`
+  
+  **Default:** System default language
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean" required>
+  Indicates whether the subscription was processed successfully.
+</ResponseField>
+
+<ResponseField name="message" type="string" required>
+  Localized user-friendly message describing the result of the operation. Message language is determined by the `lang` input parameter.
+</ResponseField>
+
+## Behavior
+
+### Development Mode
+
+When SMTP credentials are not configured (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`), the action runs in development mode:
+
+- Email is logged to console with development message
+- No email is sent
+- Returns success response with localized development message (`form.dev.success`)
+- Console shows reminder to configure SMTP variables
+
+### Production Mode
+
+When SMTP credentials are configured:
+
+1. Validates `EMAIL_TO` environment variable exists
+2. Creates SMTP connection with serverless-optimized settings:
+   - No connection pooling (`pool: false`)
+   - Single connection (`maxConnections: 1`)
+   - 20-second timeout (`rateDelta: 20000`)
+   - Maximum 5 emails per connection (`rateLimit: 5`)
+3. Sends HTML-formatted notification email to administrator
+4. **Critical:** Closes SMTP connection immediately after sending (required for serverless environments)
+
+### Email Content
+
+- **From:** "Club Del Poble" `<SMTP_USER>`
+- **To:** EMAIL_TO (from environment)
+- **Subject:** "¡Nueva solicitud para el Club Del Poble! 🍕"
+- **Body:** HTML notification with subscriber's email address
+
+## Localization
+
+Response messages are localized based on the `lang` parameter using the i18n system (`src/i18n/ui`):
+
+- `form.dev.success` - Development mode success message
+- `form.success` - Production success message
+- `form.error.config` - Configuration error message
+- `form.error.processing` - General processing error message
+
+## Example Request
+
+```javascript
+// Using fetch API
+const response = await fetch('/actions/subscribeToClub', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    lang: 'es'
+  })
+});
+
+const result = await response.json();
+```
+
+```javascript
+// Using Astro Actions API (client-side)
+import { actions } from 'astro:actions';
+
+const result = await actions.subscribeToClub({
+  email: 'user@example.com',
+  lang: 'val'
+});
+```
+
+## Example Response
+
+### Success (Production)
+
+```json
+{
+  "success": true,
+  "message": "¡Suscripción exitosa! Te mantendremos informado."
+}
+```
+
+<Note>
+  Actual message depends on the localization value of `form.success` for the specified language.
+</Note>
+
+### Success (Development)
+
+```json
+{
+  "success": true,
+  "message": "Email registrado correctamente (modo desarrollo)"
+}
+```
+
+<Note>
+  Actual message depends on the localization value of `form.dev.success` for the specified language.
+</Note>
+
+### Error (Configuration)
+
+```json
+{
+  "success": false,
+  "message": "Error de configuración del servidor"
+}
+```
+
+<Note>
+  Actual message depends on the localization value of `form.error.config` for the specified language.
+</Note>
+
+### Error (Processing)
+
+```json
+{
+  "success": false,
+  "message": "Error al procesar la solicitud"
+}
+```
+
+<Note>
+  Actual message depends on the localization value of `form.error.processing` for the specified language.
+</Note>
+
+## Error Handling
+
+- **Validation errors:** Returns error with "Email inválido" message
+- **Missing EMAIL_TO:** Returns localized configuration error
+- **SMTP errors:** Caught and returns localized processing error message
+
+## Serverless Optimization
+
+This action is specifically optimized for serverless environments (e.g., Vercel):
+
+- Connection pooling is disabled to prevent connection reuse issues
+- SMTP connection is explicitly closed in a `finally` block
+- Single connection limit prevents resource exhaustion
+- Rate limiting prevents overwhelming SMTP servers
+
+## Source Code
+
+Defined in `src/actions/index.ts:182-269`

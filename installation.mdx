@@ -1,0 +1,446 @@
+---
+title: Installation Guide
+description: Complete installation guide for Del Poble Pizzeria including dependencies, environment setup, and prerequisites
+---
+
+# Installation Guide
+
+This guide covers everything you need to set up Del Poble Pizzeria for development, from system requirements to environment configuration.
+
+## System Requirements
+
+Ensure your development environment meets these requirements:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node-js">
+    **Version 18.0.0 or higher**
+    
+    Check your version:
+    ```bash
+    node --version
+    ```
+  </Card>
+  <Card title="Package Manager" icon="box">
+    **npm** (included with Node.js) or **pnpm**
+    
+    Check your version:
+    ```bash
+    npm --version
+    ```
+  </Card>
+</CardGroup>
+
+<Note>
+  We recommend using [nvm](https://github.com/nvm-sh/nvm) (Node Version Manager) to manage Node.js versions.
+</Note>
+
+## Installing Node.js
+
+If you don't have Node.js installed:
+
+<Tabs>
+  <Tab title="macOS">
+    **Using Homebrew:**
+    ```bash
+    brew install node
+    ```
+
+    **Using nvm (recommended):**
+    ```bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+    nvm install 18
+    nvm use 18
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    **Download from official site:**
+    Visit [nodejs.org](https://nodejs.org) and download the LTS installer.
+
+    **Using nvm-windows:**
+    ```bash
+    nvm install 18
+    nvm use 18
+    ```
+  </Tab>
+  
+  <Tab title="Linux">
+    **Using nvm (recommended):**
+    ```bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+    nvm install 18
+    nvm use 18
+    ```
+
+    **Using apt (Ubuntu/Debian):**
+    ```bash
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    ```
+  </Tab>
+</Tabs>
+
+## Project Dependencies
+
+Del Poble Pizzeria uses the following main dependencies:
+
+### Core Framework
+
+```json package.json
+{
+  "dependencies": {
+    "astro": "^5.17.1",
+    "@astrojs/node": "^9.5.2",
+    "@astrojs/vercel": "^9.0.4"
+  }
+}
+```
+
+- **astro**: The core web framework for server-side rendering
+- **@astrojs/node**: Node.js adapter for self-hosting
+- **@astrojs/vercel**: Vercel adapter for edge deployment
+
+### CMS & Content
+
+```json package.json
+{
+  "dependencies": {
+    "@sanity/client": "^7.14.0",
+    "@sanity/image-url": "^2.0.3",
+    "astro-portabletext": "^0.13.0"
+  }
+}
+```
+
+- **@sanity/client**: Client for fetching content from Sanity CMS
+- **@sanity/image-url**: Helper for building Sanity image URLs
+- **astro-portabletext**: Renderer for Sanity's Portable Text format
+
+### UI & Animations
+
+```json package.json
+{
+  "dependencies": {
+    "gsap": "^3.14.2",
+    "lenis": "^1.3.17",
+    "swiper": "^12.1.0"
+  }
+}
+```
+
+- **gsap**: Professional-grade animation library
+- **lenis**: Smooth scroll library
+- **swiper**: Modern mobile touch slider
+
+### Server Actions
+
+```json package.json
+{
+  "dependencies": {
+    "nodemailer": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^7.0.9"
+  }
+}
+```
+
+- **nodemailer**: Email sending for contact forms
+- **@types/nodemailer**: TypeScript definitions
+
+### Styling
+
+```json package.json
+{
+  "devDependencies": {
+    "sass-embedded": "^1.97.3"
+  }
+}
+```
+
+- **sass-embedded**: Fast SCSS/Sass compilation
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    ```bash
+    git clone <your-repo-url> delpoblepizzeria
+    cd delpoblepizzeria
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all project dependencies:
+
+    ```bash
+    npm install
+    ```
+
+    This command will:
+    - Read `package.json` and `package-lock.json`
+    - Download all dependencies to `node_modules/`
+    - Set up TypeScript types
+    - Prepare build tools
+
+    <Tip>
+      For faster installation, you can use `pnpm install` if you have pnpm installed.
+    </Tip>
+  </Step>
+
+  <Step title="Environment Configuration">
+    Create your environment file:
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    The `.env.example` file contains:
+
+    ```bash .env.example
+    # SMTP Configuration for sending emails
+    # These credentials are provided by your hosting provider
+
+    # SMTP server host
+    SMTP_HOST=smtp.yourhosting.com
+
+    # SMTP port (usually 465 for SSL or 587 for TLS)
+    SMTP_PORT=465
+
+    # SMTP user (usually the full email address)
+    SMTP_USER=noreply@yourdomain.com
+
+    # SMTP password
+    SMTP_PASS=your_smtp_password
+
+    # Recipient email for subscription notifications
+    EMAIL_TO=admin@yourdomain.com
+    ```
+  </Step>
+
+  <Step title="Configure Sanity CMS (Optional)">
+    The project comes pre-configured with a Sanity project:
+
+    ```typescript src/lib/sanity.ts
+    export const client = createClient({
+      projectId: 'v8qkjh2b',
+      dataset: 'production',
+      useCdn: true,
+      apiVersion: '2024-01-01',
+    });
+    ```
+
+    To use your own Sanity project:
+    1. Create a new project at [sanity.io](https://sanity.io)
+    2. Update `projectId` and `dataset` in `src/lib/sanity.ts`
+    3. Deploy your schemas from `delpoble-studio/`
+  </Step>
+
+  <Step title="Verify Installation">
+    Test that everything is installed correctly:
+
+    ```bash
+    npm run dev
+    ```
+
+    If successful, you should see:
+    ```
+    🚀 astro v5.17.1 started in XXms
+    
+      ┃ Local    http://localhost:4321/
+      ┃ Network  use --host to expose
+    ```
+  </Step>
+</Steps>
+
+## Environment Variables Explained
+
+### SMTP Configuration
+
+These variables enable the contact form functionality:
+
+<ParamField path="SMTP_HOST" type="string" required>
+  Your email provider's SMTP server address.
+  
+  Examples:
+  - Gmail: `smtp.gmail.com`
+  - SendGrid: `smtp.sendgrid.net`
+  - Mailgun: `smtp.mailgun.org`
+</ParamField>
+
+<ParamField path="SMTP_PORT" type="number" required>
+  SMTP port number.
+  
+  Common values:
+  - `465` - SSL/TLS (secure)
+  - `587` - STARTTLS (secure)
+  - `25` - Unencrypted (not recommended)
+</ParamField>
+
+<ParamField path="SMTP_USER" type="string" required>
+  SMTP authentication username, usually your full email address.
+</ParamField>
+
+<ParamField path="SMTP_PASS" type="string" required>
+  SMTP authentication password.
+  
+  <Warning>
+    Never commit this to version control. Keep it in `.env` which should be in `.gitignore`.
+  </Warning>
+</ParamField>
+
+<ParamField path="EMAIL_TO" type="string" required>
+  The email address where contact form submissions will be sent.
+</ParamField>
+
+## Development Tools Setup
+
+### VS Code Extensions (Recommended)
+
+For the best development experience, install these VS Code extensions:
+
+- **Astro** - Official Astro language support
+- **SCSS Formatter** - Format SCSS/Sass files
+- **ESLint** - JavaScript linting
+- **Prettier** - Code formatting
+
+### TypeScript Configuration
+
+The project includes TypeScript configuration:
+
+```json tsconfig.json
+{
+  "extends": "astro/tsconfigs/strict"
+}
+```
+
+This provides:
+- Strict type checking
+- Astro-specific types
+- Better IDE support
+
+## Sanity Studio Setup
+
+To run Sanity Studio locally for content management:
+
+<Steps>
+  <Step title="Navigate to Studio Directory">
+    ```bash
+    cd delpoble-studio
+    ```
+  </Step>
+
+  <Step title="Install Studio Dependencies">
+    ```bash
+    npm install
+    ```
+
+    This installs Sanity-specific packages defined in `delpoble-studio/package.json`.
+  </Step>
+
+  <Step title="Start Studio">
+    ```bash
+    npm run dev
+    ```
+
+    Studio will be available at `http://localhost:3333`
+  </Step>
+
+  <Step title="Login to Sanity (First Time)">
+    If this is your first time, you'll need to authenticate:
+    ```bash
+    npx sanity login
+    ```
+  </Step>
+</Steps>
+
+## Verifying Your Installation
+
+<AccordionGroup>
+  <Accordion title="Check Node.js and npm">
+    ```bash
+    node --version  # Should be v18.0.0 or higher
+    npm --version   # Should be 8.0.0 or higher
+    ```
+  </Accordion>
+
+  <Accordion title="Check Dependencies">
+    ```bash
+    npm list --depth=0
+    ```
+    
+    This shows all installed top-level packages.
+  </Accordion>
+
+  <Accordion title="Check TypeScript">
+    ```bash
+    npm run astro check
+    ```
+    
+    This validates TypeScript configuration and types.
+  </Accordion>
+
+  <Accordion title="Test Build">
+    ```bash
+    npm run build
+    ```
+    
+    This creates a production build in `./dist/`
+  </Accordion>
+</AccordionGroup>
+
+## Common Installation Issues
+
+<AccordionGroup>
+  <Accordion title="npm install fails with permission errors">
+    **On macOS/Linux:**
+    ```bash
+    sudo chown -R $USER /usr/local/lib/node_modules
+    ```
+
+    **Better solution:** Use nvm to install Node.js without sudo.
+  </Accordion>
+
+  <Accordion title="Package version conflicts">
+    Delete lockfile and reinstall:
+    ```bash
+    rm package-lock.json
+    rm -rf node_modules
+    npm install
+    ```
+  </Accordion>
+
+  <Accordion title="SASS compilation errors">
+    Ensure you have the correct sass-embedded version:
+    ```bash
+    npm install sass-embedded@^1.97.3 --save-dev
+    ```
+  </Accordion>
+
+  <Accordion title="TypeScript errors">
+    Make sure you have the TypeScript extension installed and reload your editor:
+    ```bash
+    # In VS Code
+    CMD/CTRL + Shift + P -> "Reload Window"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Now that you have everything installed:
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Follow the quickstart guide to run your first dev server
+  </Card>
+  <Card title="Project Structure" icon="folder" href="/development/project-structure">
+    Learn about the project organization
+  </Card>
+  <Card title="Internationalization" icon="globe" href="/concepts/internationalization">
+    Set up multi-language support
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/deployment/vercel">
+    Deploy to production on Vercel
+  </Card>
+</CardGroup>

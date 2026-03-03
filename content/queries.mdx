@@ -1,0 +1,581 @@
+---
+title: GROQ Queries
+description: Query helpers for fetching localized content from Sanity
+---
+
+## Overview
+
+The `src/lib/sanityQueries.ts` file provides GROQ query helpers for fetching localized content from Sanity. These functions handle language fallbacks and field projections automatically.
+
+## Helper Functions
+
+### localizedField
+
+Fetches a localized string field with fallback:
+
+```typescript
+export function localizedField(fieldName: string, lang: string = 'es') {
+  return `"${fieldName}": coalesce(${fieldName}.${lang}, ${fieldName}.es, "")`;
+}
+```
+
+**Parameters:**
+
+<ParamField path="fieldName" type="string" required>
+  Name of the localized field in the schema
+</ParamField>
+
+<ParamField path="lang" type="string" default="es">
+  Target language code (`es`, `en`, or `val`)
+</ParamField>
+
+**Returns:** GROQ projection string
+
+**Example:**
+```typescript
+localizedField('marqueeText', 'en')
+// Output: "marqueeText": coalesce(marqueeText.en, marqueeText.es, "")
+```
+
+**Fallback order:**
+1. Requested language (`marqueeText.en`)
+2. Spanish default (`marqueeText.es`)
+3. Empty string (`""`)
+
+### localizedArray
+
+Fetches a localized array field with fallback:
+
+```typescript
+export function localizedArray(fieldName: string, lang: string = 'es') {
+  return `"${fieldName}": coalesce(${fieldName}.${lang}, ${fieldName}.es, [])`;
+}
+```
+
+**Parameters:**
+
+<ParamField path="fieldName" type="string" required>
+  Name of the localized array field
+</ParamField>
+
+<ParamField path="lang" type="string" default="es">
+  Target language code
+</ParamField>
+
+**Returns:** GROQ projection string with array fallback
+
+**Example:**
+```typescript
+localizedArray('items', 'val')
+// Output: "items": coalesce(items.val, items.es, [])
+```
+
+## Page Query Functions
+
+### getFrontPageQuery
+
+Fetches homepage content with localization:
+
+```typescript
+export function getFrontPageQuery(lang: string = 'es')
+```
+
+<ParamField path="lang" type="string" default="es">
+  Target language code for localized fields
+</ParamField>
+
+**Returns:** Complete GROQ query string for frontPage document
+
+**Example usage:**
+```typescript
+import { getFrontPageQuery } from '@/lib/sanityQueries';
+import { client } from '@/lib/sanity';
+
+const query = getFrontPageQuery('en');
+const data = await client.fetch(query);
+```
+
+**Query structure:**
+```groq
+*[_type == "frontPage" && _id == "frontPage"][0] {
+  backgroundImages {
+    desktop,
+    mobile
+  },
+  orderLink,
+  "marqueeText": coalesce(marqueeText.en, marqueeText.es, ""),
+  images {
+    image1,
+    image2,
+    image3
+  },
+  "floatingTextLeft": coalesce(floatingTextLeft.en, floatingTextLeft.es, ""),
+  "floatingTextRight": coalesce(floatingTextRight.en, floatingTextRight.es, ""),
+  highlightedText {
+    "desktop": coalesce(desktop.en, desktop.es, []),
+    "tablet": coalesce(tablet.en, tablet.es, []),
+    "mobile": coalesce(mobile.en, mobile.es, [])
+  },
+  "bodyText": coalesce(bodyText.en, bodyText.es, ""),
+  // ... more fields
+}
+```
+
+### getHistoriaPageQuery
+
+Fetches Historia (History) page content:
+
+```typescript
+export function getHistoriaPageQuery(lang: string = 'es')
+```
+
+**Notable projections:**
+
+```groq
+"sectionTwoGallery": sectionTwoGallery[] {
+  "url": image.asset->url,
+  "alt": image.alt,
+  "title": coalesce(title.${lang}, title.es, ""),
+  "text": coalesce(text.${lang}, text.es, "")
+}
+```
+
+Dereferences image assets and localizes gallery item text.
+
+### getContactPageQuery
+
+Fetches Contact page content:
+
+```typescript
+export function getContactPageQuery(lang: string = 'es')
+```
+
+**FAQ array projection:**
+```groq
+"faqs": faqs[] {
+  "question": coalesce(question.${lang}, question.es, ""),
+  "answer": coalesce(answer.${lang}, answer.es, "")
+}
+```
+
+### getCartaPageQuery
+
+Fetches menu page with nested sections and dishes:
+
+```typescript
+export function getCartaPageQuery(lang: string = 'es')
+```
+
+**Query features:**
+- Orders sections by `order` field
+- Orders categories within sections
+- Dereferences dish documents with `->`
+- Localizes all text fields
+- Dereferences badge images
+
+**Nested structure:**
+```groq
+*[_type == "cartaPage" && _id == "cartaPage"][0] {
+  "sections": sections[] | order(order asc) {
+    "title": coalesce(title.${lang}, title.es, ""),
+    "imageTitle": coalesce(imageTitle.${lang}, imageTitle.es, ""),
+    "featuredImage": featuredImage.asset->url,
+    "featuredImageAlt": featuredImage.alt,
+    order,
+    "categories": categories[] | order(order asc) {
+      availability,
+      "name": coalesce(name.${lang}, name.es, ""),
+      "specialBadge": {
+        "url": specialBadge.asset->url,
+        "alt": specialBadge.alt
+      },
+      order,
+      "dishes": dishes[]-> | order(order asc) {
+        _id,
+        "name": coalesce(name.${lang}, name.es, ""),
+        "description": coalesce(description.${lang}, description.es, ""),
+        "badgeFront": {
+          "url": badgeFront.asset->url,
+          "alt": badgeFront.alt
+        },
+        "badgeBack": {
+          "url": badgeBack.asset->url,
+          "alt": badgeBack.alt
+        },
+        order,
+        allergens
+      }
+    }
+  }
+}
+```
+
+**Key patterns:**
+- `| order(order asc)` - Sort by order field
+- `dishes[]->` - Dereference array of dish references
+- `asset->url` - Get CDN URL for images
+
+### getPizzeriasPageQuery
+
+Fetches locations page with map data:
+
+```typescript
+export function getPizzeriasPageQuery(lang: string = 'es')
+```
+
+**Map positioning:**
+```groq
+"provinces": provinces[] {
+  "name": coalesce(name.${lang}, name.es, ""),
+  "slug": slug.current,
+  "mapIcon": mapIcon.asset->url,
+  "mapIconAlt": mapIcon.alt,
+  mapPositionX,
+  mapPositionY,
+  "locals": locals[]-> {
+    _id,
+    "locality": coalesce(locality.${lang}, locality.es, ""),
+    location,
+    phone,
+    address,
+    availability
+  }
+}
+```
+
+### getTrabajaConNosotrosPageQuery
+
+Fetches careers page content:
+
+```typescript
+export function getTrabajaConNosotrosPageQuery(lang: string = 'es')
+```
+
+**Responsive images:**
+```groq
+"cvBackgroundImage": {
+  "desktop": cvBackgroundImage.desktop.asset->url,
+  "desktopAlt": cvBackgroundImage.desktop.alt,
+  "tablet": cvBackgroundImage.tablet.asset->url,
+  "tabletAlt": cvBackgroundImage.tablet.alt,
+  "mobile": cvBackgroundImage.mobile.asset->url,
+  "mobileAlt": cvBackgroundImage.mobile.alt
+}
+```
+
+### getGeneralPageQuery
+
+Fetches dynamic general pages by slug:
+
+```typescript
+export function getGeneralPageQuery(slug: string, lang: string = 'es')
+```
+
+<ParamField path="slug" type="string" required>
+  URL slug to match (e.g., "aviso-legal")
+</ParamField>
+
+<ParamField path="lang" type="string" default="es">
+  Target language code
+</ParamField>
+
+**Example:**
+```typescript
+const query = getGeneralPageQuery('aviso-legal', 'en');
+// Fetches: *[_type == "generalPage" && slug.current == "aviso-legal"][0]
+```
+
+### getFooterQuery
+
+Fetches footer data with logo from siteSettings:
+
+```typescript
+export function getFooterQuery(lang: string = 'es')
+```
+
+**Cross-document reference:**
+```groq
+"logo": *[_type == "siteSettings" && _id == "siteSettings"][0].logo.asset->url
+```
+
+**Social media array:**
+```groq
+"socialMedia": socialMedia[] {
+  "icon": icon.asset->url,
+  "text": coalesce(text.${lang}, text.es, ""),
+  link
+}
+```
+
+## Collection Queries
+
+### getProvincesQuery
+
+Fetches all provinces ordered alphabetically:
+
+```typescript
+export function getProvincesQuery(lang: string = 'es')
+```
+
+**Query:**
+```groq
+*[_type == "province"] | order(name.es asc) {
+  "name": coalesce(name.${lang}, name.es, ""),
+  "slug": slug.current
+}
+```
+
+### getJobOffersQuery
+
+Fetches active job postings:
+
+```typescript
+export function getJobOffersQuery(lang: string = 'es')
+```
+
+**Filter and order:**
+```groq
+*[_type == "jobOffer" && active == true] | order(title.es asc) {
+  _id,
+  "title": coalesce(title.${lang}, title.es, ""),
+  "description": coalesce(description.${lang}, description.es, ""),
+  "province": province-> {
+    "name": coalesce(name.${lang}, name.es, ""),
+    "slug": slug.current
+  },
+  locality,
+  address,
+  location
+}
+```
+
+**Features:**
+- Filters only active offers (`active == true`)
+- Orders by Spanish title
+- Dereferences province document
+
+## Common GROQ Patterns
+
+### Dereferencing
+
+Get referenced document data:
+
+```groq
+// Single reference
+"province": province-> { name, slug }
+
+// Array of references
+"dishes": dishes[]-> { name, description }
+```
+
+### Asset URLs
+
+Get CDN URLs for images:
+
+```groq
+"imageUrl": image.asset->url
+"imageAlt": image.alt
+```
+
+### Ordering
+
+Sort results:
+
+```groq
+// Ascending
+*[_type == "dish"] | order(order asc)
+
+// Descending  
+*[_type == "post"] | order(publishedAt desc)
+
+// Multiple fields
+*[_type == "local"] | order(province asc, name asc)
+```
+
+### Filtering
+
+Select specific documents:
+
+```groq
+// By type and ID
+*[_type == "frontPage" && _id == "frontPage"][0]
+
+// By slug
+*[_type == "generalPage" && slug.current == "${slug}"][0]
+
+// By boolean
+*[_type == "jobOffer" && active == true]
+
+// By array contains
+*[_type == "category" && "delivery" in availability]
+```
+
+### Coalesce (Fallback)
+
+Provide default values:
+
+```groq
+// String fallback
+"name": coalesce(name.en, name.es, "Untitled")
+
+// Array fallback
+"items": coalesce(items.en, items.es, [])
+
+// Object fallback
+"content": coalesce(content.en, content.es, {})
+```
+
+### Projections
+
+Shape the response data:
+
+```groq
+*[_type == "dish"] {
+  _id,
+  "dishName": name.es,
+  "ingredients": description.es,
+  "hasBadge": defined(badgeFront)
+}
+```
+
+## Usage in Next.js
+
+### Server Component
+
+```typescript
+import { client } from '@/lib/sanity';
+import { getCartaPageQuery } from '@/lib/sanityQueries';
+
+export default async function CartaPage({
+  params: { locale }
+}: {
+  params: { locale: string }
+}) {
+  const query = getCartaPageQuery(locale);
+  const data = await client.fetch(query);
+  
+  return <CartaContent data={data} />;
+}
+```
+
+### With Caching
+
+```typescript
+const data = await client.fetch(
+  getCartaPageQuery('es'),
+  {},
+  {
+    next: { revalidate: 60 } // Revalidate every 60 seconds
+  }
+);
+```
+
+### Dynamic Routes
+
+```typescript
+import { getGeneralPageQuery } from '@/lib/sanityQueries';
+
+export default async function GeneralPage({
+  params
+}: {
+  params: { slug: string; locale: string }
+}) {
+  const query = getGeneralPageQuery(params.slug, params.locale);
+  const data = await client.fetch(query);
+  
+  if (!data) {
+    notFound();
+  }
+  
+  return <GeneralPageContent data={data} />;
+}
+```
+
+## Testing Queries
+
+Use the Vision tool in Sanity Studio:
+
+1. Open `http://localhost:3334`
+2. Click "Vision" in the navigation
+3. Paste a query helper output
+4. Click "Execute" to see results
+
+**Example:**
+```groq
+*[_type == "frontPage" && _id == "frontPage"][0] {
+  "marqueeText": coalesce(marqueeText.en, marqueeText.es, ""),
+  orderLink
+}
+```
+
+## Best Practices
+
+### Always Use Helpers
+
+✅ **Good:**
+```typescript
+const query = getFrontPageQuery(locale);
+```
+
+❌ **Bad:**
+```typescript
+const query = `*[_type == "frontPage"][0] { marqueeText.${locale} }`;
+// No fallback, no structure
+```
+
+### Handle Missing Data
+
+```typescript
+const data = await client.fetch(query);
+
+if (!data) {
+  return <NotFound />;
+}
+```
+
+### Type Safety
+
+Define TypeScript interfaces for query results:
+
+```typescript
+interface FrontPageData {
+  marqueeText: string;
+  orderLink: string;
+  images: {
+    image1: SanityImage;
+    image2: SanityImage;
+    image3: SanityImage;
+  };
+  // ... more fields
+}
+
+const data = await client.fetch<FrontPageData>(query);
+```
+
+### Minimize Over-fetching
+
+Only fetch fields you need:
+
+```typescript
+// Instead of fetching everything:
+*[_type == "dish"] { ... }
+
+// Fetch only what's needed:
+*[_type == "dish"] {
+  _id,
+  "name": coalesce(name.es, ""),
+  order
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Sanity Setup" icon="gear" href="/content/sanity-setup">
+    Configure and run Sanity Studio locally
+  </Card>
+  
+  <Card title="Content Schemas" icon="database" href="/content/schemas">
+    Learn about schema field definitions
+  </Card>
+</CardGroup>

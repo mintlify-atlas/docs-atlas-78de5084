@@ -1,0 +1,359 @@
+---
+title: Contact Forms
+description: Documentation for contact form and Club subscription form implementation
+---
+
+Del Poble features two main forms: the **Contact Form** on the `/contacto` page and the **Club Del Poble Subscription Form** on the homepage.
+
+## Contact Form
+
+**Location:** `src/pages/contacto.astro:151-218`
+
+### Form Structure
+
+The contact form uses Astro Actions for server-side processing:
+
+```astro
+<form class="form-section__form" method="POST" action={actions.submitContactForm}
+  data-sending={t('contacto.form.sending')}
+  data-error={t('contacto.form.error')}
+  data-success={t('contacto.form.success')}
+>
+```
+
+### Form Fields
+
+<Steps>
+
+<Step title="Name and Email (Row 1)">
+
+```html
+<input type="text" name="nombre" placeholder="Nombre" required />
+<input type="email" name="email" placeholder="Email" required />
+```
+
+Both fields are 50% width on desktop, 100% on mobile.
+
+</Step>
+
+<Step title="Contact Reason (Row 2)">
+
+```html
+<select name="motivo" required>
+  <option value="" disabled selected>Motivo de contacto</option>
+  <option value="informacion">Información general</option>
+  <option value="reserva">Reservas</option>
+  <option value="eventos">Eventos privados</option>
+  <option value="franquicia">Franquicia</option>
+  <option value="prensa">Prensa</option>
+  <option value="otro">Otro</option>
+</select>
+```
+
+**Styling:** Select color changes from gray (#B3B3B3) to black when an option is selected, handled by JavaScript:
+
+```javascript
+select.classList.toggle('is-placeholder', select.value === '');
+```
+
+</Step>
+
+<Step title="Message (Row 3)">
+
+```html
+<textarea name="mensaje" placeholder="Mensaje" rows="5" required></textarea>
+```
+
+</Step>
+
+<Step title="Privacy Checkbox and Submit">
+
+```html
+<label class="form-section__checkbox">
+  <input type="checkbox" name="privacidad" value="accepted" required />
+  <span set:html={t('contacto.form.privacy')} />
+</label>
+
+<button type="submit" class="btn bright-orange">
+  {t('contacto.form.submit')}
+</button>
+```
+
+</Step>
+
+</Steps>
+
+### Validation Schema
+
+**File:** `src/actions/index.ts:122-130`
+
+```typescript
+input: z.object({
+  nombre: z.string().min(1, 'El nombre es obligatorio'),
+  email: z.string().email('Email inválido'),
+  motivo: z.string().min(1, 'El motivo de contacto es obligatorio'),
+  mensaje: z.string().min(1, 'El mensaje es obligatorio'),
+  privacidad: z.string().min(1, 'Debes aceptar la política de privacidad'),
+})
+```
+
+All fields are required. Email must be a valid email format.
+
+### Form Submission Flow
+
+<Steps>
+
+<Step title="User submits form">
+
+Form submit event is intercepted by JavaScript (contacto.astro:246-282).
+
+</Step>
+
+<Step title="Button state changes">
+
+```javascript
+btn.disabled = true;
+btn.textContent = txtSending; // "Enviando..."
+```
+
+</Step>
+
+<Step title="Action is called">
+
+```javascript
+const { data, error } = await actions.submitContactForm(formData);
+```
+
+</Step>
+
+<Step title="Email is sent via SMTP">
+
+The action sends an email to `EMAIL_TO` using Nodemailer:
+
+```javascript
+await transporter.sendMail({
+  from: `"Del Poble Contacto" <${smtpUser}>`,
+  to: emailTo,
+  subject: `Nuevo contacto: ${input.motivo} - ${input.nombre}`,
+  html: // ... formatted email template
+});
+```
+
+**SMTP Configuration:**
+- `SMTP_HOST` - SMTP server hostname
+- `SMTP_PORT` - Port (465 for secure, 587 for TLS)
+- `SMTP_USER` - SMTP username
+- `SMTP_PASS` - SMTP password
+- `EMAIL_TO` - Recipient email address
+
+</Step>
+
+<Step title="Success/error message displayed">
+
+```javascript
+if (error || !data?.success) {
+  msgDiv.className = 'form-section__message error';
+  msgDiv.textContent = data?.message || txtError;
+} else {
+  msgDiv.className = 'form-section__message success';
+  msgDiv.textContent = data.message || txtSuccess;
+  contactForm.reset();
+}
+```
+
+</Step>
+
+</Steps>
+
+### Development Mode
+
+If SMTP credentials are not configured, the form operates in development mode:
+
+```javascript
+if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) {
+  console.log('📧 Contacto recibido (modo desarrollo):', input);
+  return { success: true, message: 'Mensaje enviado correctamente (modo desarrollo)' };
+}
+```
+
+---
+
+## Club Del Poble Subscription Form
+
+**Location:** `src/components/SectionClubDelPoble.astro:96-129`
+
+### Form Structure
+
+The Club subscription form features animated form boxes and uses JSON-based action submission:
+
+```astro
+<form class="section-club__form" method="POST" action={actions.subscribeToClub}>
+```
+
+### Visual Design
+
+The form uses three stacked/layered `BoxForm` components:
+
+```astro
+<BoxForm variant="white" showInput={true} />
+<BoxForm variant="blue" showInput={true} />
+<BoxForm variant="green" inputPlaceholder={emailPlaceholder} showInput={true} />
+```
+
+**Animation on scroll:** (SectionClubDelPoble.astro:213-239)
+
+- **White box:** Rotates -6.13° and translates -27px left (desktop) / -14px (tablet)
+- **Blue box:** Rotates 5.67° and translates 27px right (desktop) / 10px (tablet)
+- **Green box:** Remains centered with the email input
+
+Animations trigger when section reaches 50% viewport using GSAP ScrollTrigger.
+
+### Form Fields
+
+```html
+<input type="email" name="email" placeholder="Email" required />
+
+<label class="terms-checkbox">
+  <input type="checkbox" name="terms" required />
+  <span>He leído y acepto la política de privacidad</span>
+</label>
+
+<button type="submit" class="btn btn-green">
+  Unirme al club
+</button>
+```
+
+### Validation Schema
+
+**File:** `src/actions/index.ts:182-187`
+
+```typescript
+input: z.object({
+  email: z.string().email('Email inválido'),
+  lang: z.enum(['es', 'en', 'val']).optional(),
+})
+```
+
+Only email is validated. Language is automatically passed from client context.
+
+### Submission Flow
+
+<Steps>
+
+<Step title="Form submit prevented (client-side handling)">
+
+```javascript
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  // ...
+});
+```
+
+**File:** `src/components/SectionClubDelPoble.astro:138-191`
+
+</Step>
+
+<Step title="Button disabled and loading state">
+
+```javascript
+button.disabled = true;
+button.textContent = t['form.button.sending']; // "Enviando..."
+```
+
+</Step>
+
+<Step title="Action called with language context">
+
+```javascript
+const { data, error } = await actions.subscribeToClub({ email, lang });
+```
+
+</Step>
+
+<Step title="Email notification sent">
+
+The action sends a notification email:
+
+```javascript
+await transporter.sendMail({
+  from: `"Club Del Poble" <${smtpUser}>`,
+  to: emailTo,
+  subject: '¡Nueva solicitud para el Club Del Poble! 🍕',
+  html: `
+    <h2>Nueva solicitud de suscripción</h2>
+    <p><strong>Email:</strong> ${input.email}</p>
+  `
+});
+```
+
+</Step>
+
+<Step title="Success message and form reset">
+
+```javascript
+if (data.success) {
+  form.reset();
+  messageDiv.textContent = data.message;
+}
+```
+
+</Step>
+
+</Steps>
+
+### Serverless Optimization
+
+The SMTP transporter is optimized for serverless environments (Vercel):
+
+```javascript
+const transporter = nodemailer.createTransport({
+  // ...
+  pool: false,        // No connection pooling
+  maxConnections: 1,  // Single connection
+  rateDelta: 20000,   // 20s timeout
+  rateLimit: 5,       // Max 5 emails per connection
+});
+
+// Always close after sending
+transporter.close();
+```
+
+---
+
+## Common Patterns
+
+### Async Form Submission
+
+Both forms use client-side JavaScript to:
+1. Prevent default form submission
+2. Show loading state
+3. Call Astro Action
+4. Display inline success/error message
+5. Reset form on success
+
+### Error Handling
+
+Errors are caught and displayed inline:
+
+```javascript
+try {
+  const { data, error } = await actions.formAction(formData);
+  // handle response
+} catch (err) {
+  console.error(err);
+  messageDiv.textContent = 'Ha ocurrido un error';
+} finally {
+  button.disabled = false;
+  button.textContent = originalText;
+}
+```
+
+### Internationalization
+
+All form labels, placeholders, and messages support i18n:
+
+```astro
+placeholder={t('contacto.form.nombre')}
+```
+
+Translations are loaded via `useTranslations(lang)` from `src/i18n/utils.ts`.

@@ -1,0 +1,184 @@
+---
+title: Vercel Deployment
+description: Deploy Del Poble Pizzeria to Vercel
+---
+
+Del Poble Pizzeria is configured to deploy seamlessly to Vercel using the Vercel adapter for Astro.
+
+## Prerequisites
+
+- A [Vercel account](https://vercel.com/signup)
+- Your project pushed to a Git repository (GitHub, GitLab, or Bitbucket)
+- Environment variables configured (see [Environment Variables](/deployment/environment-variables))
+
+## Adapter Configuration
+
+The project uses the `@astrojs/vercel` adapter with server-side rendering enabled.
+
+### astro.config.mjs
+
+```javascript
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  output: 'server', // Required for Server Actions
+  adapter: vercel(),
+  i18n: {
+    defaultLocale: 'es',
+    locales: ['es', 'en', 'val'],
+    routing: {
+      prefixDefaultLocale: false, // Spanish without prefix: /
+    }
+  },
+});
+```
+
+<Warning>
+  The `output: 'server'` configuration is required for the email functionality and server actions to work properly.
+</Warning>
+
+## Deployment Steps
+
+### 1. Connect Repository
+
+1. Log in to [Vercel](https://vercel.com)
+2. Click "Add New Project"
+3. Import your Git repository
+4. Select the repository containing Del Poble Pizzeria
+
+### 2. Configure Build Settings
+
+Vercel should automatically detect Astro. Verify these settings:
+
+- **Framework Preset:** Astro
+- **Build Command:** `npm run build` or `astro build`
+- **Output Directory:** `dist` (auto-detected)
+- **Install Command:** `npm install`
+
+### 3. Add Environment Variables
+
+Before deploying, add your environment variables:
+
+1. In the project configuration, navigate to "Environment Variables"
+2. Add each variable from your `.env` file:
+   - `SMTP_HOST`
+   - `SMTP_PORT`
+   - `SMTP_USER`
+   - `SMTP_PASS`
+   - `EMAIL_TO`
+3. Select the appropriate environments (Production, Preview, Development)
+
+<Warning>
+  Use production-ready SMTP credentials, not development values.
+</Warning>
+
+### 4. Deploy
+
+Click "Deploy" to start the deployment process. Vercel will:
+
+1. Clone your repository
+2. Install dependencies
+3. Build your Astro project
+4. Deploy to the Vercel edge network
+
+## Build Configuration
+
+### package.json Scripts
+
+The project includes these npm scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  }
+}
+```
+
+- `dev` - Start local development server
+- `build` - Build for production (used by Vercel)
+- `preview` - Preview production build locally
+
+## Dependencies
+
+Key dependencies for Vercel deployment:
+
+- `@astrojs/vercel` (^9.0.4) - Vercel adapter for Astro
+- `astro` (^5.17.1) - Core framework
+- `nodemailer` (^8.0.1) - Email sending functionality
+- `@sanity/client` (^7.14.0) - Sanity CMS integration
+
+## Post-Deployment
+
+### 1. Verify Deployment
+
+After deployment completes:
+
+1. Visit your production URL
+2. Test all three language versions (Spanish, English, Valencian)
+3. Test the newsletter subscription form
+4. Verify images load from Sanity
+
+### 2. Configure Custom Domain (Optional)
+
+1. Go to Project Settings → Domains
+2. Add your custom domain
+3. Follow DNS configuration instructions
+4. Wait for SSL certificate provisioning
+
+### 3. Monitor Performance
+
+Vercel provides analytics for:
+
+- Page load times
+- Core Web Vitals
+- Function execution
+- Edge network performance
+
+## Automatic Deployments
+
+Vercel automatically deploys:
+
+- **Production:** When you push to your main/master branch
+- **Preview:** For every pull request and branch push
+
+Each deployment gets a unique URL for testing.
+
+## Rollbacks
+
+If issues occur:
+
+1. Go to Deployments in your Vercel dashboard
+2. Find a previous working deployment
+3. Click the three dots menu
+4. Select "Promote to Production"
+
+## Environment-Specific Builds
+
+You can configure different environment variables for:
+
+- **Production** - Live site
+- **Preview** - Pull request previews
+- **Development** - Local development
+
+## Serverless Functions
+
+The Vercel adapter automatically converts Astro server endpoints to Vercel Serverless Functions, including the email sending functionality.
+
+## Regional Configuration
+
+By default, Vercel deploys to the optimal region. To specify a region, add to `astro.config.mjs`:
+
+```javascript
+export default defineConfig({
+  adapter: vercel({
+    functionPerRoute: false,
+    edgeMiddleware: true
+  }),
+});
+```
+
+Refer to the [@astrojs/vercel documentation](https://docs.astro.build/en/guides/integrations-guide/vercel/) for advanced configuration options.

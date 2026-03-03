@@ -1,0 +1,226 @@
+---
+title: 'Trabaja con Nosotros Page Query'
+description: 'Query function to fetch careers page with job listings and CV submission section'
+---
+
+## getTrabajaConNosotrosPageQuery
+
+Retrieves all content for the "Work with Us" careers page including gallery, job offer search functionality, and CV submission section.
+
+### Function Signature
+
+```typescript
+getTrabajaConNosotrosPageQuery(lang: string = 'es'): string
+```
+
+### Parameters
+
+<ParamField path="lang" type="string" default="es">
+  Language code for localized content. Supports 'es', 'ca', 'en', etc. Falls back to Spanish if translation not available.
+</ParamField>
+
+### GROQ Query
+
+```groq
+*[_type == "trabajaConNosotrosPage" && _id == "trabajaConNosotrosPage"][0] {
+  "highlightedText": {
+    "desktop": coalesce(highlightedText.desktop.ca, highlightedText.desktop.es, ""),
+    "tablet": coalesce(highlightedText.tablet.ca, highlightedText.tablet.es, ""),
+    "mobile": coalesce(highlightedText.mobile.ca, highlightedText.mobile.es, "")
+  },
+  "highlightedTextSecondary": {
+    "tablet": coalesce(highlightedTextSecondary.tablet.ca, highlightedTextSecondary.tablet.es, ""),
+    "mobile": coalesce(highlightedTextSecondary.mobile.ca, highlightedTextSecondary.mobile.es, "")
+  },
+  "bodyText": coalesce(bodyText.ca, bodyText.es, ""),
+  "gallery": gallery[] {
+    "url": asset->url,
+    "alt": alt
+  },
+  "offersTitle": coalesce(offersTitle.ca, offersTitle.es, ""),
+  "searchPlaceholder": coalesce(searchPlaceholder.ca, searchPlaceholder.es, ""),
+  "loadMoreText": coalesce(loadMoreText.ca, loadMoreText.es, ""),
+  "cvBackgroundImage": {
+    "desktop": cvBackgroundImage.desktop.asset->url,
+    "desktopAlt": cvBackgroundImage.desktop.alt,
+    "tablet": cvBackgroundImage.tablet.asset->url,
+    "tabletAlt": cvBackgroundImage.tablet.alt,
+    "mobile": cvBackgroundImage.mobile.asset->url,
+    "mobileAlt": cvBackgroundImage.mobile.alt
+  },
+  "cvHighlightedText": {
+    "desktop": coalesce(cvHighlightedText.desktop.ca, cvHighlightedText.desktop.es, ""),
+    "tablet": coalesce(cvHighlightedText.tablet.ca, cvHighlightedText.tablet.es, ""),
+    "mobile": coalesce(cvHighlightedText.mobile.ca, cvHighlightedText.mobile.es, "")
+  },
+  "cvBodyText": coalesce(cvBodyText.ca, cvBodyText.es, "")
+}
+```
+
+### Response Structure
+
+<ResponseField name="highlightedText" type="object">
+  Primary page heading with responsive variations
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop version of highlighted text
+    </ResponseField>
+    <ResponseField name="tablet" type="string">
+      Tablet version of highlighted text
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile version of highlighted text
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="highlightedTextSecondary" type="object">
+  Secondary highlighted text for tablet and mobile
+  <Expandable title="properties">
+    <ResponseField name="tablet" type="string">
+      Tablet version of secondary highlighted text
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile version of secondary highlighted text
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="bodyText" type="string">
+  Localized introductory body text
+</ResponseField>
+
+<ResponseField name="gallery" type="array">
+  Image gallery showcasing workplace/team
+  <Expandable title="item properties">
+    <ResponseField name="url" type="string">
+      Resolved image URL from Sanity CDN
+    </ResponseField>
+    <ResponseField name="alt" type="string">
+      Image alt text for accessibility
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="offersTitle" type="string">
+  Localized heading for job offers section
+</ResponseField>
+
+<ResponseField name="searchPlaceholder" type="string">
+  Localized placeholder text for job search input
+</ResponseField>
+
+<ResponseField name="loadMoreText" type="string">
+  Localized text for "load more" button
+</ResponseField>
+
+<ResponseField name="cvBackgroundImage" type="object">
+  Responsive background images for CV submission section
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop background image URL
+    </ResponseField>
+    <ResponseField name="desktopAlt" type="string">
+      Desktop background alt text
+    </ResponseField>
+    <ResponseField name="tablet" type="string">
+      Tablet background image URL
+    </ResponseField>
+    <ResponseField name="tabletAlt" type="string">
+      Tablet background alt text
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile background image URL
+    </ResponseField>
+    <ResponseField name="mobileAlt" type="string">
+      Mobile background alt text
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="cvHighlightedText" type="object">
+  CV submission section highlighted text with responsive variations
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop CV section heading
+    </ResponseField>
+    <ResponseField name="tablet" type="string">
+      Tablet CV section heading
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile CV section heading
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="cvBodyText" type="string">
+  Localized body text for CV submission section
+</ResponseField>
+
+### Usage Example
+
+```typescript
+import { sanityClient } from '@/lib/sanity';
+import { getTrabajaConNosotrosPageQuery } from '@/lib/sanityQueries';
+
+// In an Astro page component
+const lang = Astro.currentLocale || 'es';
+const trabajaData = await sanityClient.fetch(getTrabajaConNosotrosPageQuery(lang));
+```
+
+```astro
+---
+// pages/trabaja-con-nosotros.astro
+import { sanityClient } from '@/lib/sanity';
+import { getTrabajaConNosotrosPageQuery } from '@/lib/sanityQueries';
+
+const lang = Astro.currentLocale || 'es';
+const data = await sanityClient.fetch(getTrabajaConNosotrosPageQuery(lang));
+---
+
+<section>
+  <h1>{data.highlightedText.desktop}</h1>
+  <p>{data.bodyText}</p>
+  
+  <div class="gallery">
+    {data.gallery.map(image => (
+      <img src={image.url} alt={image.alt} />
+    ))}
+  </div>
+  
+  <div class="job-offers">
+    <h2>{data.offersTitle}</h2>
+    <input 
+      type="search" 
+      placeholder={data.searchPlaceholder}
+      id="job-search"
+    />
+    <div id="job-listings">
+      <!-- Job listings populated dynamically -->
+    </div>
+    <button>{data.loadMoreText}</button>
+  </div>
+  
+  <div 
+    class="cv-submission"
+    style={`background-image: url(${data.cvBackgroundImage.desktop})`}
+  >
+    <h2>{data.cvHighlightedText.desktop}</h2>
+    <p>{data.cvBodyText}</p>
+    <!-- CV upload form -->
+  </div>
+</section>
+```
+
+### Related Queries
+
+This page works in conjunction with:
+- `getJobOffersQuery()` - Fetches active job listings for the offers section
+- `getProvincesQuery()` - Provides province filter options for job search
+
+### Notes
+
+- Job offers are fetched separately using `getJobOffersQuery()` for better performance
+- The gallery array contains resolved URLs ready for display
+- Responsive background images allow optimal loading for different devices
+- Search and load more functionality requires client-side implementation

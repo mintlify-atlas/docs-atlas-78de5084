@@ -1,0 +1,188 @@
+---
+title: 'Translation Object'
+description: 'UI translation strings for Del Poble Pizzeria in multiple languages'
+---
+
+## Overview
+
+The `ui` translation object contains all user-facing strings for the Del Poble Pizzeria website in three languages: Spanish (es), English (en), and Valencian (val).
+
+## Structure
+
+The translation object is exported from `src/i18n/ui.ts` and follows this structure:
+
+```typescript
+export const ui = {
+  es: { /* Spanish translations */ },
+  en: { /* English translations */ },
+  val: { /* Valencian translations */ }
+} as const;
+```
+
+## Supported Languages
+
+<ParamField path="es" type="object" default>
+  Spanish (Español) - Default language
+</ParamField>
+
+<ParamField path="en" type="object">
+  English
+</ParamField>
+
+<ParamField path="val" type="object">
+  Valencian (Valencià)
+</ParamField>
+
+## Translation Keys
+
+All translation keys are organized by feature or page section:
+
+### Form Keys (Club Del Poble)
+
+```typescript
+'form.button.sending': 'Enviando...',
+'form.button.submit': 'Suscribirse',
+'form.success': '¡Gracias por suscribirte! Revisa tu email.',
+'form.error': 'Hubo un error. Por favor, inténtalo de nuevo.',
+'form.error.config': 'Error de configuración del servidor',
+'form.error.processing': 'Hubo un error al procesar tu suscripción.',
+'form.dev.success': '¡Gracias por suscribirte! (Modo desarrollo)',
+'form.input.header': 'INTRODUCE AQUÍ TU EMAIL',
+'form.input.placeholder': 'soyunpatodegoma',
+'form.terms.label': 'Acepto las condiciones del Club Del Poble'
+```
+
+### Header Navigation
+
+```typescript
+'header.order': 'Iniciar pedido',
+'header.club': 'Del Poble Club',
+'header.nav.carta': 'Carta',
+'header.nav.historia': 'Nuestra Pizza',
+'header.nav.pizzerias': 'Pizzerías',
+'header.nav.talento': 'Talento',
+'header.menu.aria': 'Abrir menú'
+```
+
+### Menu (Carta)
+
+```typescript
+'carta.available': 'Disponible en:',
+'carta.delivery': 'DELIVERY',
+'carta.pizzeria': 'PIZZERÍA',
+'carta.restaurante': 'RESTAURANTE',
+'carta.consultar': '*Consultar en local'
+```
+
+### Pizzerias
+
+```typescript
+'pizzerias.como-llegar': 'Cómo llegar'
+```
+
+### Careers (Talento)
+
+```typescript
+'talento.search.placeholder': 'Buscar ofertas...',
+'talento.no-jobs': 'No hay ofertas disponibles en este momento.',
+'talento.form.area.placeholder': 'Selecciona tu área',
+'talento.form.area.cocina': 'Cocina',
+'talento.form.area.sala': 'Sala',
+'talento.form.area.delivery': 'Delivery',
+'talento.form.area.gestion': 'Gestión',
+'talento.form.area.marketing': 'Marketing',
+'talento.form.area.otro': 'Otro',
+'talento.form.experiencia.placeholder': 'Experiencia en el área',
+'talento.form.experiencia.sin': 'Sin experiencia',
+'talento.form.experiencia.menos1': 'Menos de 1 año',
+'talento.form.experiencia.1-3': '1 - 3 años',
+'talento.form.experiencia.3-5': '3 - 5 años',
+'talento.form.experiencia.mas5': 'Más de 5 años',
+'talento.form.ubicacion.placeholder': 'Ubicación',
+'talento.form.cv.label': 'Curriculum vitae',
+'talento.form.carta.label': 'Carta de presentación',
+'talento.form.file.max': 'Máximo 10 mb',
+'talento.form.file.none': 'Ningún archivo seleccionado',
+'talento.form.privacy': 'He leído y acepto la Política de privacidad',
+'talento.form.submit': 'Enviar',
+'talento.form.sending': 'Enviando...',
+'talento.form.error': 'Ha ocurrido un error. Inténtalo de nuevo.',
+'talento.form.success': '¡Candidatura enviada correctamente!',
+'talento.jobs.como-llegar': 'Cómo llegar',
+'talento.jobs.inscribirse': 'Inscribirme'
+```
+
+### Contact Form (Contacto)
+
+```typescript
+'contacto.form.nombre': 'Nombre y apellidos',
+'contacto.form.email': 'Email',
+'contacto.form.motivo.placeholder': 'Motivo de contacto',
+'contacto.form.motivo.informacion': 'Información general',
+'contacto.form.motivo.reserva': 'Reserva',
+'contacto.form.motivo.eventos': 'Eventos y grupos',
+'contacto.form.motivo.franquicia': 'Franquicia',
+'contacto.form.motivo.prensa': 'Prensa y comunicación',
+'contacto.form.motivo.otro': 'Otro',
+'contacto.form.mensaje': 'Mensaje',
+'contacto.form.privacy': 'He leído y acepto la Política de privacidad',
+'contacto.form.submit': 'Enviar',
+'contacto.form.sending': 'Enviando...',
+'contacto.form.error': 'Ha ocurrido un error. Inténtalo de nuevo.',
+'contacto.form.success': '¡Mensaje enviado correctamente!'
+```
+
+### 404 Error Page
+
+```typescript
+'404.top.desktop': '¡UPS! PARECE QUE A LA ENTREGA 404',
+'404.top.responsive': '¡UPS! PARECE QUE A LA\nENTREGA 404',
+'404.bottom.desktop': 'SE LE HA APARECIDO UN HOYO EN EL CAMINO',
+'404.bottom.tablet': 'SE LE HA APARECIDO UN HOYO EN EL CAMINO',
+'404.bottom.mobile': 'SE LE HA APARECIDO UN HOYO EN EL CAMINO',
+'404.btn.inicio': 'Volver a Inicio',
+'404.btn.pedido': 'Iniciar Pedido'
+```
+
+## Usage Example
+
+Access translations directly from the `ui` object:
+
+```astro
+---
+import { ui } from '@/i18n/ui';
+
+const spanishGreeting = ui.es['form.success'];
+const englishGreeting = ui.en['form.success'];
+const valencianGreeting = ui.val['form.success'];
+---
+
+<p>{spanishGreeting}</p>
+<!-- Output: ¡Gracias por suscribirte! Revisa tu email. -->
+```
+
+## Adding New Translations
+
+When adding new translation keys:
+
+1. Add the key to all three language objects (es, en, val)
+2. Use dot notation for namespacing (e.g., `section.subsection.key`)
+3. Ensure the key exists in `ui[typeof defaultLang]` for type safety
+4. Use the `useTranslations` function to access translations in components
+
+```typescript
+export const ui = {
+  es: {
+    'new.section.key': 'Nuevo texto',
+    // ...
+  },
+  en: {
+    'new.section.key': 'New text',
+    // ...
+  },
+  val: {
+    'new.section.key': 'Nou text',
+    // ...
+  }
+};
+```

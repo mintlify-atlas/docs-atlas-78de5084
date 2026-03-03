@@ -1,0 +1,367 @@
+---
+title: Styling
+description: SCSS architecture, design system, and responsive patterns in Del Poble Pizzeria
+---
+
+## SCSS Architecture
+
+The project uses **SCSS** with a modular architecture organized by component and page.
+
+### File Structure
+
+```
+src/styles/
+├── _fonts.scss          # Font-face declarations
+├── _variables.scss      # Design tokens
+├── global.scss          # Global styles & utilities
+├── components/
+│   ├── _footer.scss
+│   ├── _header.scss
+│   ├── _marquee.scss
+│   └── _nav.scss
+└── pages/
+    ├── frontpage/
+    │   ├── _head.scss
+    │   ├── _section-five.scss
+    │   └── _section-two.scss
+    ├── carta/
+    ├── contacto/
+    └── historia/
+```
+
+### Import Pattern
+
+Components import their own styles:
+
+```astro
+---
+import "../styles/components/_header.scss";
+import "../styles/components/_nav.scss";
+---
+```
+
+The base layout (`Layout.astro`) doesn't import all styles - each component is responsible for its own styling.
+
+## Design Tokens
+
+### Breakpoints
+
+Defined in `src/styles/_variables.scss:4-7`:
+
+```scss
+$mobile: 600px;
+$tablet: 1000px;
+$desktop: 1440px;
+$desktop_xl: 1920px;
+```
+
+**Usage:**
+
+```scss
+.component {
+  font-size: 24px;
+  
+  @media only screen and (max-width: $tablet) {
+    font-size: 20px;
+  }
+  
+  @media only screen and (max-width: $mobile) {
+    font-size: 18px;
+  }
+}
+```
+
+### Color System
+
+**Color Palette** (`src/styles/_variables.scss:22-43`):
+
+<CodeGroup>
+```scss Greens
+$forest-green: #2A4B3E;  // Primary dark green
+$dark-forest: #183429;   // Darkest green
+$moss-green: #1D382D;    // Medium green
+$mint-green: #94D8BD;    // Light accent
+```
+
+```scss Neutrals
+$cream: #EFE4CB;         // Background
+$light-cream: #F0E6D0;   // Lighter variant
+$sand: #D1C3A3;          // Darker beige
+```
+
+```scss Accents
+$bright-orange: #FE861B; // CTA orange
+$yellow: #FCB922;        // Golden yellow
+$sky-blue: #8DC8E8;      // Light blue
+$light-blue: #D2EBF7;    // Pale blue
+```
+</CodeGroup>
+
+**Button Colors:**
+
+```scss
+$golden-btn-yellow: $yellow;      // #FCB922
+$golden-btn-green: $forest-green; // #2A4B3E
+```
+
+### Typography
+
+**Font Families** (`src/styles/_variables.scss:48-50`):
+
+```scss
+$Outfit: "Outfit", Helvetica;
+$del_poble: "DelPoble Sans", Helvetica;
+$Boston_Skyline_Rough: "Boston Skyline Rough", Helvetica;
+```
+
+**Font Loading:**
+
+All fonts use `font-display: swap` for optimal performance:
+
+```scss
+@font-face {
+  font-family: 'Outfit';
+  src: url('/fonts/OUTFIT/Outfit-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;  // Variable font
+  font-display: swap;
+}
+```
+
+See `src/styles/_fonts.scss:1-110` for complete font declarations.
+
+**Available Weights:**
+
+- **Outfit**: Variable (100-900) + static weights (Thin to Black)
+- **DelPoble Sans**: Regular (400)
+- **Boston Skyline**: Regular (400)
+- **Boston Skyline Rough**: Regular (400)
+
+### Spacing System
+
+**Responsive Padding** (`src/styles/_variables.scss:12-14`):
+
+```scss
+// Fluid padding using viewport units
+$general-x-padding: calc(40/1440)*100*1vw;        // Desktop
+$general-x-padding-tablet: calc(40/768)*100*1vw;  // Tablet
+$general-x-padding-mobile: 16px;                   // Mobile (fixed)
+```
+
+**Utility Class:**
+
+```scss
+.general-x-padding {
+  padding-left: $general-x-padding;
+  padding-right: $general-x-padding;
+  
+  @media only screen and (max-width: $tablet) {
+    padding-left: $general-x-padding-tablet;
+    padding-right: $general-x-padding-tablet;
+  }
+  
+  @media only screen and (max-width: $mobile) {
+    padding-left: $general-x-padding-mobile;
+    padding-right: $general-x-padding-mobile;
+  }
+}
+```
+
+See `src/styles/global.scss:107-120` for implementation.
+
+## Global Utilities
+
+### Grid System
+
+7-column grid system (`src/styles/global.scss:77-84`):
+
+```scss
+$grid-columns: 7;
+
+@for $i from 1 through $grid-columns {
+  .col-#{$i} {
+    width: calc((100% / #{$grid-columns}) * #{$i});
+  }
+}
+```
+
+**Usage:**
+
+```html
+<div class="cols">
+  <div class="col-3"><!-- 3/7 width --></div>
+  <div class="col-4"><!-- 4/7 width --></div>
+</div>
+```
+
+### Flexbox Utilities
+
+```scss
+.cols {
+  display: flex;
+  
+  @media only screen and (max-width: $tablet) {
+    &.tablet-flex-column {
+      flex-direction: column;
+      
+      .col { width: 100% !important; }
+    }
+  }
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+```
+
+### Button Styles
+
+**Base Button** (`src/styles/global.scss:123-172`):
+
+```scss
+.btn {
+  padding: 5px 14px;
+  font-family: $Outfit;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  transition: background-color 0.3s ease-in;
+  
+  @media only screen and (max-width: $mobile) {
+    font-size: 18px;
+    line-height: 20px;
+    padding: 8px 14px;
+  }
+}
+```
+
+**Button Variants:**
+
+<Tabs>
+  <Tab title="Orange">
+    ```scss
+    .btn.bright-orange {
+      background-color: $bright-orange; // #FE861B
+      color: $dark-forest;
+      
+      &:hover {
+        background-color: $golden-btn-yellow;
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Yellow">
+    ```scss
+    .btn.golden-btn-yellow {
+      background-color: $golden-btn-yellow; // #FCB922
+      color: $dark-forest !important;
+      
+      &:hover {
+        background-color: $sky-blue;
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Green">
+    ```scss
+    .btn.btn-green {
+      background-color: $golden-btn-green; // #2A4B3E
+      color: $cream !important;
+      
+      &:hover {
+        background-color: $dark-forest;
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Sky Blue">
+    ```scss
+    .btn.btn-sky-blue {
+      background-color: $sky-blue; // #8DC8E8
+      color: $forest-green !important;
+      
+      &:hover {
+        background-color: $golden-btn-yellow;
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Responsive Patterns
+
+### Mobile-First Approach
+
+While the project uses desktop-down media queries, components are built with mobile responsiveness in mind:
+
+```scss
+.component {
+  // Desktop styles (base)
+  display: flex;
+  gap: 40px;
+  
+  // Tablet adjustments
+  @media only screen and (max-width: $tablet) {
+    gap: 20px;
+  }
+  
+  // Mobile adjustments
+  @media only screen and (max-width: $mobile) {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+```
+
+### Viewport-Based Typography
+
+Fluid typography using viewport units:
+
+```scss
+$paragraph: calc(18/1440)*100*1vw;       // Desktop
+$paragraph-tablet: calc(16/768)*100*1vw; // Tablet
+$paragraph-mobile: 16px;                  // Mobile (fixed)
+```
+
+See `src/styles/_variables.scss:66-73` for complete paragraph system.
+
+### Responsive Images
+
+All Sanity images use the `urlFor()` helper with responsive sizing:
+
+```astro
+---
+const imageUrl = column2?.backgroundImage
+  ? urlFor(column2.backgroundImage)
+      .width(1200)
+      .quality(90)
+      .url()
+  : '';
+---
+```
+
+## Best Practices
+
+<Note>
+Follow these guidelines to maintain consistency across the codebase.
+</Note>
+
+1. **Use Design Tokens** - Always reference variables for colors, spacing, and breakpoints
+2. **Component-Scoped Styles** - Import SCSS files within the component that uses them
+3. **BEM-like Naming** - Use double underscores for elements: `.section-five__image`
+4. **Responsive Order** - Desktop → Tablet → Mobile media queries
+5. **Fluid Spacing** - Use `calc()` with viewport units for scalable layouts
+6. **Font Display** - Always set `font-display: swap` for custom fonts
+7. **Utility Classes** - Leverage `.general-x-padding`, `.cols`, `.flex-column` before writing custom CSS
+
+## Performance Optimizations
+
+- **Critical CSS** - Components load their own styles, reducing initial bundle
+- **Font Optimization** - Variable fonts reduce file size while supporting all weights
+- **Smooth Scrolling** - Custom scrollbar hidden with `-webkit-scrollbar: none`
+- **Safe Area** - iOS notch support with `padding-top: env(safe-area-inset-top)`
+
+See `src/styles/global.scss:14-40` for scroll and viewport optimizations.

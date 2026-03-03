@@ -1,0 +1,178 @@
+---
+title: 'Contact Page Query'
+description: 'Query function to fetch contact page with form fields and FAQs'
+---
+
+## getContactPageQuery
+
+Retrieves all content for the contact page including highlighted text, contact image, form content, and frequently asked questions.
+
+### Function Signature
+
+```typescript
+getContactPageQuery(lang: string = 'es'): string
+```
+
+### Parameters
+
+<ParamField path="lang" type="string" default="es">
+  Language code for localized content. Supports 'es', 'ca', 'en', etc. Falls back to Spanish if translation not available.
+</ParamField>
+
+### GROQ Query
+
+```groq
+*[_type == "contactPage" && _id == "contactPage"][0] {
+  "highlightedText": {
+    "desktop": coalesce(highlightedText.desktop.ca, highlightedText.desktop.es, ""),
+    "tablet": coalesce(highlightedText.tablet.ca, highlightedText.tablet.es, ""),
+    "mobile": coalesce(highlightedText.mobile.ca, highlightedText.mobile.es, "")
+  },
+  "image": {
+    "url": image.asset->url,
+    "alt": image.alt
+  },
+  "imageText": coalesce(imageText.ca, imageText.es, ""),
+  "formHighlightedText": {
+    "desktop": coalesce(formHighlightedText.desktop.ca, formHighlightedText.desktop.es, ""),
+    "tablet": coalesce(formHighlightedText.tablet.ca, formHighlightedText.tablet.es, ""),
+    "mobile": coalesce(formHighlightedText.mobile.ca, formHighlightedText.mobile.es, "")
+  },
+  "formBodyText": coalesce(formBodyText.ca, formBodyText.es, ""),
+  "faqsHighlightedText": {
+    "desktop": coalesce(faqsHighlightedText.desktop.ca, faqsHighlightedText.desktop.es, ""),
+    "tablet": coalesce(faqsHighlightedText.tablet.ca, faqsHighlightedText.tablet.es, ""),
+    "mobile": coalesce(faqsHighlightedText.mobile.ca, faqsHighlightedText.mobile.es, "")
+  },
+  "faqs": faqs[] {
+    "question": coalesce(question.ca, question.es, ""),
+    "answer": coalesce(answer.ca, answer.es, "")
+  }
+}
+```
+
+### Response Structure
+
+<ResponseField name="highlightedText" type="object">
+  Page header highlighted text with responsive variations
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop version of highlighted text
+    </ResponseField>
+    <ResponseField name="tablet" type="string">
+      Tablet version of highlighted text
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile version of highlighted text
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="image" type="object">
+  Contact page hero image
+  <Expandable title="properties">
+    <ResponseField name="url" type="string">
+      Resolved image URL from Sanity CDN
+    </ResponseField>
+    <ResponseField name="alt" type="string">
+      Image alt text for accessibility
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="imageText" type="string">
+  Localized text overlay or caption for the image
+</ResponseField>
+
+<ResponseField name="formHighlightedText" type="object">
+  Contact form section highlighted text with responsive variations
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop form heading
+    </ResponseField>
+    <ResponseField name="tablet" type="string">
+      Tablet form heading
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile form heading
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="formBodyText" type="string">
+  Localized descriptive text for the contact form section
+</ResponseField>
+
+<ResponseField name="faqsHighlightedText" type="object">
+  FAQs section highlighted text with responsive variations
+  <Expandable title="properties">
+    <ResponseField name="desktop" type="string">
+      Desktop FAQs heading
+    </ResponseField>
+    <ResponseField name="tablet" type="string">
+      Tablet FAQs heading
+    </ResponseField>
+    <ResponseField name="mobile" type="string">
+      Mobile FAQs heading
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="faqs" type="array">
+  Array of frequently asked questions with localized content
+  <Expandable title="item properties">
+    <ResponseField name="question" type="string">
+      Localized FAQ question
+    </ResponseField>
+    <ResponseField name="answer" type="string">
+      Localized FAQ answer
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Usage Example
+
+```typescript
+import { sanityClient } from '@/lib/sanity';
+import { getContactPageQuery } from '@/lib/sanityQueries';
+
+// In an Astro page component
+const lang = Astro.currentLocale || 'es';
+const contactData = await sanityClient.fetch(getContactPageQuery(lang));
+```
+
+```astro
+---
+// pages/contacto.astro
+import { sanityClient } from '@/lib/sanity';
+import { getContactPageQuery } from '@/lib/sanityQueries';
+
+const lang = Astro.currentLocale || 'es';
+const data = await sanityClient.fetch(getContactPageQuery(lang));
+---
+
+<section>
+  <h1>{data.highlightedText.desktop}</h1>
+  
+  <div class="hero-image">
+    <img src={data.image.url} alt={data.image.alt} />
+    <p>{data.imageText}</p>
+  </div>
+  
+  <div class="contact-form">
+    <h2>{data.formHighlightedText.desktop}</h2>
+    <p>{data.formBodyText}</p>
+    <!-- Contact form fields -->
+  </div>
+  
+  <div class="faqs">
+    <h2>{data.faqsHighlightedText.desktop}</h2>
+    {data.faqs.map(faq => (
+      <details>
+        <summary>{faq.question}</summary>
+        <p>{faq.answer}</p>
+      </details>
+    ))}
+  </div>
+</section>
+```

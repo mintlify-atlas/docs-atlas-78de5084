@@ -1,0 +1,283 @@
+---
+title: Troubleshooting
+description: Common deployment issues and solutions for Del Poble Pizzeria
+---
+
+This guide covers common issues you may encounter when deploying Del Poble Pizzeria and their solutions.
+
+## SMTP Email Issues
+
+### Newsletter Form Not Sending Emails
+
+**Symptoms:**
+- Newsletter form submits but no email received
+- No error messages displayed
+- Form appears to work but emails never arrive
+
+**Solutions:**
+
+1. **Verify environment variables are set:**
+   ```bash
+   # Check in Vercel dashboard
+   # All these must be present:
+   SMTP_HOST
+   SMTP_PORT
+   SMTP_USER
+   SMTP_PASS
+   EMAIL_TO
+   ```
+
+2. **Check SMTP credentials:**
+   - Test credentials with your email provider
+   - Ensure you're using an App Password (for Gmail)
+   - Verify the email account is active
+
+3. **Verify port configuration:**
+   - Port 465 requires SSL
+   - Port 587 requires STARTTLS
+   - Ensure your SMTP provider supports the port you're using
+
+<Warning>
+  Gmail and other providers may block "less secure apps." Use App Passwords instead of your regular password.
+</Warning>
+
+### SMTP Connection Timeout
+
+**Error:** `Connection timeout` or `ETIMEDOUT`
+
+**Solutions:**
+
+1. Check your hosting provider allows outbound SMTP connections
+2. Verify firewall settings aren't blocking SMTP ports
+3. Try alternative SMTP ports (587 instead of 465)
+4. Contact your hosting provider about SMTP restrictions
+
+### Authentication Failed
+
+**Error:** `Invalid login` or `535 Authentication failed`
+
+**Solutions:**
+
+1. Double-check `SMTP_USER` and `SMTP_PASS` values
+2. Ensure no extra whitespace in environment variables
+3. For Gmail, generate a new App Password
+4. Verify the email account is not locked or suspended
+
+## Sanity CMS Issues
+
+### Images Not Loading
+
+**Symptoms:**
+- Broken image placeholders
+- 404 errors for Sanity CDN URLs
+- Images work locally but not in production
+
+**Solutions:**
+
+1. **Verify Sanity client configuration:**
+   - Check project ID is correct
+   - Ensure dataset name matches production dataset
+   - Verify API version is set correctly
+
+2. **Check CORS settings in Sanity:**
+   - Go to Sanity Studio → API settings
+   - Add your Vercel domain to allowed origins
+   - Include both `yoursite.vercel.app` and custom domain
+
+3. **Verify image URL generation:**
+   ```javascript
+   // Ensure @sanity/image-url is properly configured
+   import imageUrlBuilder from '@sanity/image-url'
+   ```
+
+### Sanity Content Not Updating
+
+**Symptoms:**
+- Changes in Sanity Studio don't appear on site
+- Stale content displayed
+
+**Solutions:**
+
+1. **Clear Vercel cache:**
+   - Trigger a new deployment
+   - Or use revalidation in your data fetching
+
+2. **Check API token permissions:**
+   - Ensure read permissions are granted
+   - Verify token is not expired
+
+3. **Verify dataset:**
+   - Ensure you're querying the correct dataset
+   - Check if you're using `production` vs `development`
+
+## Build Failures
+
+### Build Command Failed
+
+**Error:** `astro build` fails during Vercel deployment
+
+**Solutions:**
+
+1. **Check build logs:**
+   - Review the full error message in Vercel logs
+   - Look for missing dependencies or syntax errors
+
+2. **Verify Node version:**
+   - Ensure Vercel uses compatible Node.js version
+   - Add `.nvmrc` or specify in `package.json`:
+   ```json
+   {
+     "engines": {
+       "node": ">=18.0.0"
+     }
+   }
+   ```
+
+3. **Clear build cache:**
+   - In Vercel dashboard, go to Project Settings
+   - Redeploy with cache cleared
+
+### Dependency Installation Failed
+
+**Error:** `npm install` fails or dependency conflicts
+
+**Solutions:**
+
+1. **Update package-lock.json:**
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   git add package-lock.json
+   git commit -m "Update dependencies"
+   ```
+
+2. **Check for version conflicts:**
+   - Review `package.json` for incompatible versions
+   - Update dependencies to compatible versions
+
+3. **Use npm instead of other package managers:**
+   - Ensure Vercel is using npm (check build settings)
+   - Delete yarn.lock or pnpm-lock.yaml if present
+
+### TypeScript Errors
+
+**Error:** Type errors during build
+
+**Solutions:**
+
+1. **Install type definitions:**
+   ```bash
+   npm install -D @types/nodemailer
+   ```
+
+2. **Check tsconfig.json:**
+   - Ensure Astro's default TypeScript config is not overridden
+   - Verify strict mode settings
+
+3. **Temporarily skip type checking (not recommended):**
+   ```javascript
+   // astro.config.mjs
+   export default defineConfig({
+     // Only as last resort
+   });
+   ```
+
+## Runtime Errors
+
+### 500 Internal Server Error
+
+**Symptoms:**
+- Pages load with 500 error
+- Server-side rendering fails
+
+**Solutions:**
+
+1. **Check Vercel function logs:**
+   - Go to Deployments → Your deployment → Functions
+   - Review error logs for specific errors
+
+2. **Verify environment variables:**
+   - Ensure all required variables are set
+   - Check for typos in variable names
+
+3. **Test locally with production build:**
+   ```bash
+   npm run build
+   npm run preview
+   ```
+
+### Page Not Found (404)
+
+**Symptoms:**
+- Routes work locally but return 404 in production
+- Internationalization routes not working
+
+**Solutions:**
+
+1. **Verify i18n configuration:**
+   ```javascript
+   // astro.config.mjs
+   i18n: {
+     defaultLocale: 'es',
+     locales: ['es', 'en', 'val'],
+     routing: {
+       prefixDefaultLocale: false
+     }
+   }
+   ```
+
+2. **Check file names and paths:**
+   - Ensure files are properly named in `src/pages/`
+   - Verify directory structure matches expected routes
+
+3. **Review Vercel routing:**
+   - Check for custom routing rules
+   - Ensure no conflicting redirects
+
+## Performance Issues
+
+### Slow Page Load Times
+
+**Solutions:**
+
+1. **Optimize images:**
+   - Use Sanity's image transformation
+   - Implement responsive images
+   - Enable lazy loading
+
+2. **Check bundle size:**
+   - Review imported dependencies
+   - Remove unused libraries (GSAP, Lenis, Swiper if not used)
+
+3. **Enable edge caching:**
+   - Use appropriate cache headers
+   - Consider static generation for some pages
+
+### Function Timeout
+
+**Error:** Serverless function execution timeout
+
+**Solutions:**
+
+1. **Optimize Sanity queries:**
+   - Fetch only required fields
+   - Use pagination for large datasets
+
+2. **Upgrade Vercel plan:**
+   - Free tier has 10s timeout
+   - Pro tier has 60s timeout
+
+## Getting Help
+
+If issues persist:
+
+1. **Check Vercel Status:** [status.vercel.com](https://status.vercel.com)
+2. **Review Astro Docs:** [docs.astro.build](https://docs.astro.build)
+3. **Check Sanity Status:** [status.sanity.io](https://status.sanity.io)
+4. **Contact Support:**
+   - Vercel Support for deployment issues
+   - Sanity Support for CMS issues
+
+<Warning>
+  Always check deployment logs first. Most issues can be diagnosed from the error messages in Vercel's build and function logs.
+</Warning>

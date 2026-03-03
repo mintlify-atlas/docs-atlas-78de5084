@@ -1,0 +1,229 @@
+---
+title: Sanity Studio Setup
+description: Configure and run Sanity Studio for content management
+---
+
+## Overview
+
+Del Poble Pizzeria uses Sanity Studio as its headless CMS for managing all website content. The Studio is located in the `delpoble-studio/` directory and provides a user-friendly interface for content editors.
+
+## Configuration
+
+The Sanity Studio is configured via `sanity.config.ts`:
+
+```typescript delpoble-studio/sanity.config.ts
+import {defineConfig} from 'sanity'
+import {structureTool} from 'sanity/structure'
+import {visionTool} from '@sanity/vision'
+import {schemaTypes} from './schemas'
+
+export default defineConfig({
+  name: 'default',
+  title: 'Del Poble Pizzeria',
+  
+  projectId: 'v8qkjh2b',
+  dataset: 'production',
+  
+  plugins: [
+    structureTool({
+      structure: (S) => S.list().title('Contenido').items([...])
+    }),
+    visionTool(),
+  ],
+  
+  schema: {
+    types: schemaTypes,
+  },
+  
+  server: {
+    port: 3334,
+  },
+})
+```
+
+### Key Configuration
+
+<ParamField path="projectId" type="string" required>
+  Sanity project ID: `v8qkjh2b`
+</ParamField>
+
+<ParamField path="dataset" type="string" required>
+  Dataset name: `production`
+</ParamField>
+
+<ParamField path="server.port" type="number" default="3333">
+  Local development port: `3334`
+</ParamField>
+
+<ParamField path="studioHost" type="string">
+  Deployed studio subdomain: `delpoble`
+</ParamField>
+
+## Running Locally
+
+### Prerequisites
+
+- Node.js and npm installed
+- Access to the Sanity project
+
+### Development Server
+
+1. Navigate to the studio directory:
+   ```bash
+   cd delpoble-studio
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open your browser to:
+   ```
+   http://localhost:3334
+   ```
+
+### Available Scripts
+
+<ParamField path="dev" type="command">
+  Start development server with hot reloading
+  ```bash
+  npm run dev
+  ```
+</ParamField>
+
+<ParamField path="start" type="command">
+  Start production server
+  ```bash
+  npm start
+  ```
+</ParamField>
+
+<ParamField path="build" type="command">
+  Build the Studio for deployment
+  ```bash
+  npm run build
+  ```
+</ParamField>
+
+## Accessing the Admin Panel
+
+### Local Access
+
+When running locally, access the Studio at:
+```
+http://localhost:3334
+```
+
+### Production Access
+
+The deployed Studio is available at:
+```
+https://delpoble.sanity.studio
+```
+
+### Authentication
+
+Sanity Studio uses OAuth for authentication:
+
+1. Click "Sign in" on the Studio interface
+2. Authenticate with your Google account or email
+3. Ensure your account has proper permissions in the Sanity project
+
+## Custom Structure
+
+The Studio uses a custom structure to organize content logically:
+
+```typescript
+structure: (S) =>
+  S.list()
+    .title('Contenido')
+    .items([
+      // Configuration
+      S.documentListItem()
+        .title('⚙️ Configuración General')
+        .schemaType('siteSettings')
+        .id('siteSettings'),
+      
+      S.documentListItem()
+        .title('📄 Footer')
+        .schemaType('footer')
+        .id('footer'),
+      
+      S.divider(),
+      
+      // Pages
+      S.listItem()
+        .title('🏠 Front Page')
+        .child(S.document().schemaType('frontPage').documentId('frontPage')),
+      
+      // Carta section
+      S.listItem()
+        .title('📋 Carta')
+        .child(S.list().title('Carta').items([...])),
+      
+      // More sections...
+    ])
+```
+
+This structure provides:
+- Emoji icons for visual navigation
+- Logical grouping of related content
+- Singleton documents for unique pages
+- List views for document collections
+
+## Plugins
+
+### Structure Tool
+
+Provides the custom content structure and document management interface.
+
+### Vision Tool
+
+Enables GROQ query testing directly in the Studio:
+
+1. Click "Vision" in the Studio navigation
+2. Write GROQ queries to test data fetching
+3. See real-time results from your dataset
+
+Example query:
+```groq
+*[_type == "frontPage"][0] {
+  marqueeText,
+  orderLink
+}
+```
+
+## Environment Variables
+
+CLI configuration is set in `sanity.cli.ts`:
+
+```typescript
+export default defineCliConfig({
+  api: {
+    projectId: 'v8qkjh2b',
+    dataset: 'production'
+  },
+  deployment: {
+    autoUpdates: true,
+  },
+  studioHost: 'delpoble'
+})
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Schema Documentation" icon="database" href="/content/schemas">
+    Learn about content schemas and field types
+  </Card>
+  
+  <Card title="Localized Content" icon="language" href="/content/localized-content">
+    Understand the multi-language system
+  </Card>
+</CardGroup>

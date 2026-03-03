@@ -1,0 +1,361 @@
+---
+title: Localized Content
+description: Managing multilingual content in Sanity Studio
+---
+
+## Overview
+
+Del Poble Pizzeria supports three languages:
+- **Español (es)** - Default language (required)
+- **English (en)** - Optional
+- **Valencià (val)** - Optional
+
+The localization system is defined in `delpoble-studio/schemas/languages.ts` and `localized.ts`.
+
+## Supported Languages
+
+```typescript delpoble-studio/schemas/languages.ts
+export const supportedLanguages = [
+  { id: 'es', title: 'Español', isDefault: true },
+  { id: 'en', title: 'English' },
+  { id: 'val', title: 'Valencià' }
+];
+
+export const defaultLanguage = supportedLanguages.find(lang => lang.isDefault);
+```
+
+### Language Properties
+
+<ParamField path="id" type="string" required>
+  ISO 639-1 language code used in data structure
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Display name shown in Sanity Studio interface
+</ParamField>
+
+<ParamField path="isDefault" type="boolean">
+  Whether this is the default/required language. Only Spanish (`es`) is marked as default.
+</ParamField>
+
+## Localized Field Types
+
+The `localized.ts` helper file provides functions to create multilingual fields:
+
+### localizedString
+
+For short text fields (single line):
+
+```typescript
+localizedString('marqueeText', 'Texto del Marquee', 'Description')
+```
+
+Creates an object field with:
+- Three language inputs (es, en, val)
+- Collapsible interface
+- Spanish required, others optional
+- 3-column layout for compact editing
+
+**Studio UI:**
+```
+Traducciones
+┌──────────┬──────────┬──────────┐
+│ Español* │ English  │ Valencià │
+└──────────┴──────────┴──────────┘
+```
+
+### localizedText
+
+For longer text content (multi-line):
+
+```typescript
+localizedText('bodyText', 'Texto', 6) // 6 rows
+```
+
+Creates:
+- Textarea inputs with specified row count
+- 1-column layout for better readability
+- Spanish required, others optional
+
+**Studio UI:**
+```
+Traducciones
+┌─────────────────────┐
+│ Español*            │
+│ [6-row textarea]    │
+├─────────────────────┤
+│ English             │
+│ [6-row textarea]    │
+├─────────────────────┤
+│ Valencià            │
+│ [6-row textarea]    │
+└─────────────────────┘
+```
+
+### localizedArray
+
+For arrays of localized objects:
+
+```typescript
+localizedArray('items', 'Items', {
+  type: 'object',
+  fields: [
+    { name: 'title', type: 'string' }
+  ]
+})
+```
+
+Each language has its own array of items.
+
+### localizedResponsiveText
+
+For device-specific text content:
+
+```typescript
+localizedResponsiveText('sectionFourHighlightedText', 'Texto Destacado', 4)
+```
+
+Creates three responsive breakpoints:
+
+<ParamField path="desktop" type="object" required>
+  Content for desktop viewports
+  - Contains: `es` (required), `en`, `val`
+  - Each field has 4 rows
+</ParamField>
+
+<ParamField path="tablet" type="object">
+  Content for tablet (≤1000px)
+  - Contains: `es`, `en`, `val` (all optional)
+  - Collapsed by default in UI
+</ParamField>
+
+<ParamField path="mobile" type="object">
+  Content for mobile (≤600px)
+  - Contains: `es`, `en`, `val` (all optional)
+  - Collapsed by default in UI
+</ParamField>
+
+**Data structure:**
+```json
+{
+  "sectionFourHighlightedText": {
+    "desktop": {
+      "es": "Texto en español",
+      "en": "Text in English",
+      "val": "Text en valencià"
+    },
+    "tablet": {
+      "es": "Texto tablet",
+      "en": "Tablet text"
+    },
+    "mobile": {
+      "es": "Texto móvil"
+    }
+  }
+}
+```
+
+### localizedResponsiveArray
+
+For arrays with responsive content:
+
+```typescript
+localizedResponsiveArray('highlightedText', 'Texto Destacado', {
+  type: 'object',
+  fields: [
+    {
+      name: 'line',
+      type: 'string',
+      validation: (Rule) => Rule.required(),
+    },
+  ]
+})
+```
+
+**Example usage (frontPage.ts):**
+```json
+{
+  "highlightedText": {
+    "desktop": {
+      "es": [
+        { "line": "Primera línea" },
+        { "line": "Segunda línea" }
+      ],
+      "en": [
+        { "line": "First line" },
+        { "line": "Second line" }
+      ]
+    },
+    "mobile": {
+      "es": [
+        { "line": "Texto corto" }
+      ]
+    }
+  }
+}
+```
+
+## Adding Translations in Studio UI
+
+### For Simple Fields
+
+1. Open the document in Sanity Studio
+2. Locate the localized field (marked with "Traducciones")
+3. The field displays all languages in columns:
+   - **Español*** - Required field (marked with asterisk)
+   - **English** - Optional
+   - **Valencià** - Optional
+4. Enter text in each language
+5. Save the document
+
+### For Responsive Fields
+
+1. Expand the field (e.g., "Texto Destacado")
+2. You'll see three device sections:
+   - 🖥️ Desktop (expanded by default)
+   - 📱 Tablet (collapsed)
+   - 📱 Mobile (collapsed)
+3. Within each device section:
+   - Expand to see language fields
+   - Enter content for each language
+   - Spanish is required for Desktop only
+4. Save the document
+
+**Tip:** Desktop content is used as fallback if tablet/mobile is empty.
+
+### For Array Fields
+
+1. Click "+ Add item" within the language section
+2. Fill in the object fields
+3. Repeat for other languages
+4. Use drag handles to reorder items
+5. Each language can have a different number of items
+
+## Validation Rules
+
+Localized fields enforce validation:
+
+```typescript
+fields: supportedLanguages.map(lang => ({
+  name: lang.id,
+  title: lang.title,
+  type: 'string',
+  validation: (Rule: Rule) => 
+    lang.isDefault ? Rule.required() : Rule.optional(),
+}))
+```
+
+- **Spanish (`es`)** - Always required for default language
+- **English (`en`)** - Optional, but recommended
+- **Valencià (`val`)** - Optional, but recommended
+
+The Studio will show validation errors if required Spanish content is missing.
+
+## Content Fallback Strategy
+
+When fetching content, queries use a fallback chain:
+
+```groq
+"fieldName": coalesce(fieldName.${lang}, fieldName.es, "")
+```
+
+**Fallback order:**
+1. Requested language (e.g., `en`)
+2. Default language (`es`)
+3. Empty string `""`
+
+This ensures content always displays, even if translations are incomplete.
+
+## Fieldset Configuration
+
+Localized helpers use fieldsets for organization:
+
+```typescript
+fieldsets: [
+  {
+    name: 'translations',
+    title: 'Traducciones',
+    options: { columns: 3 } // For strings
+  }
+]
+```
+
+- **Strings**: 3 columns (compact side-by-side)
+- **Text/Arrays**: 1 column (stacked for readability)
+- **Collapsible**: Can be collapsed to save space
+- **Collapsed**: Can default to collapsed state
+
+## Best Practices
+
+### Always Fill Spanish
+
+Spanish is the source language and fallback:
+- ✅ Complete all Spanish fields first
+- ✅ Ensure Spanish content is accurate
+- ⚠️ Never leave Spanish fields empty
+
+### Translation Workflow
+
+1. **Draft** - Write content in Spanish
+2. **Review** - Review Spanish for accuracy
+3. **Translate** - Add English and Valencian
+4. **Test** - Preview in all languages
+5. **Publish** - Deploy changes
+
+### Responsive Content
+
+- **Desktop** - Full, detailed content
+- **Tablet** - Leave empty to use desktop content, or provide shortened version
+- **Mobile** - Provide ultra-concise version for small screens
+
+### Arrays and Lists
+
+- Keep array items in sync across languages when possible
+- Order can differ by language if culturally appropriate
+- Preview shows Spanish content (`title: 'name.es'`)
+
+## Example: Editing a Dish
+
+When editing a dish in `delpoble-studio`:
+
+1. **Name field** - `localizedString`
+   ```
+   Español*: Margarita
+   English:  Margherita
+   Valencià: Margarita
+   ```
+
+2. **Description field** - `localizedText`
+   ```
+   Español*: Tomate, mozzarella, albahaca fresca
+   English:  Tomato, mozzarella, fresh basil
+   Valencià: Tomàquet, mozzarella, alfàbrega fresca
+   ```
+
+3. **Save** - Content is stored as:
+   ```json
+   {
+     "name": {
+       "es": "Margarita",
+       "en": "Margherita",
+       "val": "Margarita"
+     },
+     "description": {
+       "es": "Tomate, mozzarella, albahaca fresca",
+       "en": "Tomato, mozzarella, fresh basil",
+       "val": "Tomàquet, mozzarella, alfàbrega fresca"
+     }
+   }
+   ```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Content Schemas" icon="database" href="/content/schemas">
+    Learn about schema field definitions
+  </Card>
+  
+  <Card title="GROQ Queries" icon="code" href="/content/queries">
+    Fetch localized content with queries
+  </Card>
+</CardGroup>

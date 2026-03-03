@@ -1,0 +1,357 @@
+---
+title: Components
+description: Documentation for major Astro components in the Del Poble Pizzeria project
+---
+
+## Overview
+
+Del Poble uses **Astro components** (`.astro` files) for maximum performance with minimal JavaScript. Components integrate GSAP animations and Sanity CMS data.
+
+## Layout Components
+
+### Layout.astro
+
+The root layout wrapper that initializes smooth scrolling and includes Header/Footer.
+
+**Location:** `src/layouts/Layout.astro`
+
+**Props:**
+
+```typescript
+interface Props {
+  logo?: any;           // Sanity image asset
+  scrollStyle?: boolean; // Force header scroll styling
+}
+```
+
+**Key Features:**
+
+- Initializes Lenis smooth scroll (desktop only)
+- Integrates GSAP ScrollTrigger
+- Handles Astro View Transitions
+- Configures favicon from Sanity
+- Manages scroll state across page navigation
+
+**Example Usage:**
+
+```astro
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout scrollStyle={false}>
+  <main>
+    <!-- Page content -->
+  </main>
+</Layout>
+```
+
+<Note>
+The Layout component handles cleanup of ScrollTrigger instances during page transitions to prevent memory leaks.
+</Note>
+
+## Navigation Components
+
+### Header.astro
+
+Responsive header with navigation, language selector, and mobile menu.
+
+**Location:** `src/components/Header.astro:1`
+
+**Props:**
+
+```typescript
+interface Props {
+  class?: string;       // Additional CSS classes
+  scrollStyle?: boolean; // Initial scroll state
+}
+```
+
+**Features:**
+
+- Multi-language support (ES/EN/VAL)
+- Dynamic background color on scroll
+- Mobile hamburger menu with GSAP animations
+- Persistent state across View Transitions
+- SVG logo from Sanity CMS
+
+**Key Implementation:**
+
+```astro
+<header
+  class={`header ${className || 'general-x-padding'}`}
+  data-scroll-style={scrollStyle ? 'true' : 'false'}
+  transition:persist
+  transition:name="header-principal"
+>
+  <!-- Header content -->
+</header>
+```
+
+**Animation Details:**
+
+The Header uses GSAP to:
+- Slide out before page transitions (`yPercent: -102`)
+- Change background color on scroll
+- Animate mobile menu overlay
+
+See `src/components/Header.astro:106-248` for complete animation logic.
+
+### Footer.astro
+
+Dynamic footer with legal links, contact information, and social media.
+
+**Location:** `src/components/Footer.astro:1`
+
+**Props:**
+
+All data fetched from Sanity CMS:
+
+```typescript
+interface FooterData {
+  topText?: string;
+  socialMedia?: SocialMediaItem[];
+  floatingImage?: {
+    desktop?: string;
+    tablet?: string;
+  };
+  legalLink1-4?: LinkItem;
+  contactLink1-3?: LinkItem;
+  logo?: string;
+}
+```
+
+**Responsive Behavior:**
+
+- Desktop: Multi-column layout
+- Tablet: Reorganized link structure
+- Mobile: Stacked layout with mobile-specific links
+
+## Content Sections
+
+### SectionTwo.astro
+
+Image gallery section with animated photo spreading effect.
+
+**Location:** `src/components/SectionTwo.astro:1`
+
+**Props:**
+
+```typescript
+interface Props {
+  image1?: any;              // Sanity image
+  image2?: any;              // Sanity image
+  image3?: any;              // Sanity image
+  floatingTextLeft?: string;
+  floatingTextRight?: string;
+  highlightedText?: {
+    desktop?: Array<{ line: string }>;
+    tablet?: Array<{ line: string }>;
+    mobile?: Array<{ line: string }>;
+  };
+  bodyText?: string;
+}
+```
+
+**Animation:**
+
+On scroll, images "spread apart" using GSAP:
+
+```javascript
+// Left image: rotates and moves left
+gsap.to(imgLeft, {
+  rotation: -13.314,
+  x: 4,
+  y: 35,
+  left: '0%',
+  duration: 0.6,
+  ease: 'expo.out',
+  scrollTrigger: { trigger: '.section-two', start: 'top 60%', once: true }
+});
+```
+
+See `src/components/SectionTwo.astro:174-227` for full implementation.
+
+### SectionFive.astro
+
+Polaroid images section with draggable photos and 3D door animation.
+
+**Location:** `src/components/SectionFive.astro:1`
+
+**Props:**
+
+```typescript
+interface Props {
+  column1?: {
+    highlightedText?: {
+      desktop?: string;
+      tablet?: string;
+      mobile?: string;
+    };
+    bodyText?: string;
+    buttonText?: string;
+    buttonUrl?: string;
+  };
+  column2?: {
+    backgroundImage?: any;
+    image1?: any;
+    image2?: any;
+    image3?: any;
+  };
+}
+```
+
+**Key Features:**
+
+1. **Draggable Polaroids** (desktop only):
+   - Images can be dragged within 400px radius
+   - Elastic snap-back animation using `elastic.out(1, 0.4)`
+   
+2. **3D Door Exit Animation**:
+   - Columns rotate on Z-axis as doors closing
+   - Triggered on scroll exit
+
+**Implementation:**
+
+```javascript
+// Make polaroid draggable with elastic snap-back
+Draggable.create(el, {
+  type: 'x,y',
+  cursor: 'grab',
+  activeCursor: 'grabbing',
+  onRelease() {
+    gsap.to(el, {
+      x: 0, y: 0,
+      duration: 1.6,
+      ease: 'elastic.out(1, 0.4)'
+    });
+  }
+});
+```
+
+See `src/components/SectionFive.astro:142-239` for complete code.
+
+### Marquee.astro
+
+Infinite horizontal scrolling text banner.
+
+**Location:** `src/components/Marquee.astro:1`
+
+**Props:**
+
+```typescript
+interface Props {
+  text: string;  // Text to repeat
+  class?: string;
+}
+```
+
+**How It Works:**
+
+- Creates 20 copies of the text for seamless looping
+- Uses GSAP `xPercent` for responsive animation
+- Custom `horizontalLoop()` helper function
+- Speed: ~100 pixels/second
+
+**Usage:**
+
+```astro
+<Marquee text="Del Poble Pizzería • Auténtica Pizza Napolitana" />
+```
+
+See `src/components/Marquee.astro:32-117` for the complete `horizontalLoop()` implementation.
+
+## Utility Components
+
+### SocialLinks.astro
+
+Renders social media icons with optional title.
+
+**Props:**
+
+```typescript
+interface Props {
+  socialMedia?: SocialMediaItem[];
+  showTitle?: boolean;
+  title?: string;
+}
+```
+
+### Credits.astro
+
+Footer credits with copyright and designer attribution.
+
+**Props:**
+
+```typescript
+interface Props {
+  year: number;
+  companyName: string;
+  designerName: string;
+  designerUrl: string;
+}
+```
+
+### BoxForm.astro
+
+Reusable form container component for contact/club signup.
+
+## Component Patterns
+
+<Tabs>
+  <Tab title="Responsive Content">
+    Most components support device-specific content:
+    
+    ```astro
+    highlightedText?: {
+      desktop?: string;
+      tablet?: string;
+      mobile?: string;
+    }
+    ```
+    
+    With fallback logic:
+    ```typescript
+    const textTablet = tablet || desktop;
+    const textMobile = mobile || tablet || desktop;
+    ```
+  </Tab>
+  
+  <Tab title="Sanity Integration">
+    Components fetch CMS data in frontmatter:
+    
+    ```astro
+    ---
+    import { client } from '../lib/sanity';
+    
+    const data = await client.fetch(`
+      *[_type == "homepage"][0] {
+        section2 { image1, image2, bodyText }
+      }
+    `);
+    ---
+    ```
+  </Tab>
+  
+  <Tab title="Animation Lifecycle">
+    GSAP animations initialize on `astro:page-load`:
+    
+    ```javascript
+    document.addEventListener('astro:page-load', () => {
+      // Kill existing triggers
+      ScrollTrigger.getAll().forEach(t => t.kill());
+      
+      // Initialize new animations
+      gsap.to(element, { /* animation */ });
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+1. **Always define TypeScript interfaces** for component props
+2. **Use `urlFor()` helper** when rendering Sanity images for optimization
+3. **Implement responsive fallbacks** for device-specific content
+4. **Clean up GSAP instances** on `astro:after-swap` events
+5. **Desktop-only animations** should check `window.innerWidth` before initializing

@@ -1,0 +1,151 @@
+---
+title: Project Structure
+description: Overview of the Del Poble Pizzeria codebase organization and architecture
+---
+
+## Directory Overview
+
+The Del Poble Pizzeria project is built with **Astro 5.17.1** and follows a modular architecture with clear separation of concerns.
+
+```
+src/
+├── actions/          # Server actions for form handling
+├── components/       # Reusable Astro components
+├── i18n/            # Internationalization utilities
+├── layouts/         # Layout wrapper components
+├── lib/             # Utilities and external integrations
+├── pages/           # File-based routing
+│   ├── en/          # English routes
+│   └── val/         # Valencian routes
+└── styles/          # SCSS stylesheets
+    ├── components/  # Component-specific styles
+    └── pages/       # Page-specific styles
+```
+
+## Key Directories
+
+### `/src/components/`
+
+Contains reusable Astro components used throughout the application:
+
+- **Header.astro** - Main navigation with language selector
+- **Footer.astro** - Site footer with legal links and social media
+- **SectionFive.astro** - Polaroid images section with GSAP animations
+- **SectionTwo.astro** - Image gallery with scroll triggers
+- **Marquee.astro** - Infinite scrolling text banner
+- **BoxForm.astro** - Form components
+- **ScrollHorizontalHistoria.astro** - Horizontal scroll sections
+
+### `/src/pages/`
+
+File-based routing structure:
+
+- `index.astro` - Homepage (Spanish)
+- `[slug].astro` - Dynamic routes for legal pages
+- `carta.astro` - Menu page
+- `historia.astro` - History page
+- `pizzerias.astro` - Locations page
+- `talento.astro` - Careers page
+- `del-poble-club.astro` - Loyalty club page
+- `/en/` and `/val/` - Localized versions
+
+### `/src/styles/`
+
+Organized SCSS architecture:
+
+- `_fonts.scss` - Font-face declarations
+- `_variables.scss` - Colors, breakpoints, spacing
+- `global.scss` - Global styles and utilities
+- `/components/` - Component-specific styles
+- `/pages/` - Page-specific styles organized by route
+
+### `/src/lib/`
+
+Utility functions and integrations:
+
+- `sanity.ts` - Sanity CMS client configuration
+- `sanityQueries.ts` - GROQ queries for content
+- `svg.ts` - SVG optimization utilities
+
+### `/src/i18n/`
+
+Internationalization system supporting ES, EN, and VAL:
+
+- Translation utilities
+- Language detection
+- Localized URL helpers
+
+## File Naming Conventions
+
+<Note>
+The project follows consistent naming patterns for better maintainability.
+</Note>
+
+### Components
+- **PascalCase** for component files: `Header.astro`, `SectionFive.astro`
+- Descriptive names indicating purpose: `BoxForm.astro`, `ScrollHorizontalHistoria.astro`
+
+### Styles
+- **kebab-case** with underscores for SCSS files
+- Component styles: `_header.scss`, `_footer.scss`
+- Page styles organized in subdirectories: `frontpage/_section-five.scss`
+- Partials prefixed with underscore: `_fonts.scss`, `_variables.scss`
+
+### Pages
+- **kebab-case** for route files: `del-poble-club.astro`
+- Language folders in lowercase: `/en/`, `/val/`
+
+## Technology Stack
+
+<Tabs>
+  <Tab title="Core">
+    - **Astro 5.17.1** - Static site generator with View Transitions
+    - **TypeScript** - Type-safe development
+    - **SCSS** - Advanced styling with sass-embedded
+  </Tab>
+  <Tab title="Animation">
+    - **GSAP 3.14.2** - Advanced animations and ScrollTrigger
+    - **Lenis 1.3.17** - Smooth scrolling library
+    - **Swiper 12.1.0** - Touch slider components
+  </Tab>
+  <Tab title="CMS & Data">
+    - **Sanity** - Headless CMS for content management
+    - **@sanity/client 7.14.0** - Content fetching
+    - **astro-portabletext** - Rich text rendering
+  </Tab>
+  <Tab title="Deployment">
+    - **@astrojs/vercel** - Vercel adapter
+    - **@astrojs/node** - Node.js deployment option
+    - **Nodemailer** - Email functionality
+  </Tab>
+</Tabs>
+
+## Configuration Files
+
+### package.json
+
+Key dependencies and scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^5.17.1",
+    "gsap": "^3.14.2",
+    "lenis": "^1.3.17",
+    "@sanity/client": "^7.14.0"
+  }
+}
+```
+
+## Best Practices
+
+1. **Component Organization** - Keep components small and focused on a single responsibility
+2. **Style Scoping** - Use dedicated SCSS files for each component/page
+3. **Type Safety** - Define TypeScript interfaces for all component props
+4. **Content Management** - Fetch all CMS content at build time for optimal performance
+5. **Responsive Design** - Mobile-first approach with tablet and desktop breakpoints
