@@ -1,0 +1,126 @@
+{
+  "projectType": "frontend",
+  "projectName": "Del Poble Pizzeria",
+  "projectDescription": "A multi-language Astro website for Del Poble Pizzeria with Sanity CMS integration",
+  "theme": "almond",
+  "primaryColor": "#2A4B3E",
+  "lightColor": "#4A7C5D",
+  "darkColor": "#1A3B2E",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/internationalization",
+              "concepts/sanity-cms"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/project-structure",
+              "development/components",
+              "development/styling",
+              "development/animations"
+            ]
+          },
+          {
+            "group": "Content Management",
+            "pages": [
+              "content/sanity-setup",
+              "content/schemas",
+              "content/localized-content",
+              "content/queries"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/pages-overview",
+              "features/contact-forms",
+              "features/menu-carta",
+              "features/locations",
+              "features/job-offers"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/environment-variables",
+              "deployment/vercel",
+              "deployment/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Actions",
+            "pages": [
+              "api/actions/submit-cv-form",
+              "api/actions/submit-contact-form",
+              "api/actions/subscribe-to-club"
+            ]
+          },
+          {
+            "group": "Queries",
+            "pages": [
+              "api/queries/front-page",
+              "api/queries/historia-page",
+              "api/queries/contact-page",
+              "api/queries/carta-page",
+              "api/queries/pizzerias-page",
+              "api/queries/trabaja-page"
+            ]
+          },
+          {
+            "group": "Internationalization",
+            "pages": [
+              "api/i18n/translations",
+              "api/i18n/utilities"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-language support (Spanish, English, Valencian)",
+    "Sanity CMS integration with localized content",
+    "Server-side form handling with email notifications",
+    "Animated components using GSAP and Lenis",
+    "Responsive design with custom SCSS styling",
+    "Interactive menu (Carta) with allergen information",
+    "Location finder with map integration",
+    "Job offers management system"
+  ],
+  "publicApiSurface": [
+    "submitCvForm - Server action for job application submissions",
+    "submitContactForm - Server action for contact form submissions",
+    "subscribeToClub - Server action for newsletter subscriptions",
+    "getFrontPageQuery - Query for home page content",
+    "getHistoriaPageQuery - Query for history page content",
+    "getContactPageQuery - Query for contact page content",
+    "getCartaPageQuery - Query for menu content",
+    "getPizzeriasPageQuery - Query for locations content",
+    "getTrabajaConNosotrosPageQuery - Query for jobs page content",
+    "localizedField - Helper for fetching localized fields from Sanity",
+    "localizedArray - Helper for fetching localized arrays from Sanity",
+    "getLangFromUrl - Utility to extract language from URL",
+    "useTranslations - Utility to get translation function for a language"
+  ]
+}
